@@ -90,4 +90,33 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     expect(res.body.computedTotalCostINR).toBe(135000); // 120000 + 15000 computed deterministically
     expect(res.body.availabilityDisclaimer).toBe('Availability not verified: confirm directly with vendor.');
   });
+
+  it('rejects disallowed CORS origins with status 403 and {"error":"Origin not allowed"}', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://malicious-site.com');
+
+    expect(res.status).toBe(403);
+    expect(res.body.error).toBe('Origin not allowed');
+  });
+
+  it('POST /api/ai/parse-profile rejects text exceeding 5000 characters', async () => {
+    const overlyLongText = 'a'.repeat(5001);
+    const res = await request(app)
+      .post('/api/ai/parse-profile')
+      .send({ freeText: overlyLongText });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+  });
+
+  it('POST /api/ai/extract-quote rejects quote text exceeding 10000 characters', async () => {
+    const overlyLongQuote = 'a'.repeat(10001);
+    const res = await request(app)
+      .post('/api/ai/extract-quote')
+      .send({ rawText: overlyLongQuote, category: 'decor' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+  });
 });

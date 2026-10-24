@@ -9,10 +9,28 @@ export class MemoryCache {
   private store = new Map<string, CacheEntry<any>>();
   private maxItems: number;
   private defaultTtlMs: number;
+  private cleanupTimer: NodeJS.Timeout | null = null;
 
-  constructor(maxItems = 200, defaultTtlMs = 1000 * 60 * 30) { // 30 minutes TTL
+  constructor(maxItems = 200, defaultTtlMs = 1000 * 60 * 30, cleanupIntervalMs = 1000 * 60 * 5) {
     this.maxItems = maxItems;
     this.defaultTtlMs = defaultTtlMs;
+
+    this.cleanupTimer = setInterval(() => {
+      this.purgeExpired();
+    }, cleanupIntervalMs);
+    this.cleanupTimer.unref();
+  }
+
+  purgeExpired(): number {
+    const now = Date.now();
+    let purged = 0;
+    for (const [key, entry] of this.store.entries()) {
+      if (now > entry.expiresAt) {
+        this.store.delete(key);
+        purged++;
+      }
+    }
+    return purged;
   }
 
   static createKey(prefix: string, payload: unknown): string {

@@ -70,6 +70,10 @@ export const OnboardingWizard: React.FC = () => {
       setParseError('Please write a brief description of your event (at least 10 characters).');
       return;
     }
+    if (freeText.length > 5000) {
+      setParseError('Event description cannot exceed 5000 characters. Please shorten your description.');
+      return;
+    }
 
     setIsParsingAi(true);
     setParseError(null);

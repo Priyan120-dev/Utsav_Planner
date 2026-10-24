@@ -7,7 +7,7 @@ import {
   VendorBrief
 } from '@utsav/shared';
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 export class ApiError extends Error {
   constructor(message: string, public status?: number) {

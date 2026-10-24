@@ -5,6 +5,7 @@ import {
   BudgetCategory,
   QuoteItem,
   VendorBrief,
+  TaskItem,
   initializeBudgetState,
   rebalanceBudget,
   recalculateBudgetForParameters,
@@ -84,7 +85,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       );
 
       // 2. Call AI service to generate sequenced tasks with dependencies
-      let initialTasks: any[] = [];
+      let initialTasks: TaskItem[] = [];
       try {
         const tasksRes = await api.generateTimelineTasks(profile);
         initialTasks = tasksRes.tasks || [];
@@ -97,6 +98,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             title: `Book auspicious ${profile.occasion} venue in ${profile.city}`,
             category: 'venue',
             daysBeforeEvent: 90,
+            targetDate: '',
             priority: 'critical',
             dependsOn: [],
             status: 'ready'
@@ -106,6 +108,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             title: 'Finalize catering menu and dietary tasting counters',
             category: 'catering',
             daysBeforeEvent: 60,
+            targetDate: '',
             priority: 'high',
             dependsOn: ['task_venue'],
             status: 'locked'
@@ -115,6 +118,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             title: `Approve decor & lighting theme (${profile.atmosphereTheme})`,
             category: 'decor',
             daysBeforeEvent: 45,
+            targetDate: '',
             priority: 'high',
             dependsOn: ['task_venue'],
             status: 'locked'
@@ -124,6 +128,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             title: 'Send digital and printed invitations to guests',
             category: 'invitations',
             daysBeforeEvent: 30,
+            targetDate: '',
             priority: 'medium',
             dependsOn: ['task_venue'],
             status: 'locked'

@@ -26,7 +26,9 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('CORS policy: Not allowed by CORS'));
+      const corsError: any = new Error('Origin not allowed');
+      corsError.status = 403;
+      callback(corsError);
     }
   },
   credentials: true

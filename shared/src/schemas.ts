@@ -68,7 +68,7 @@ export const TaskItemSchema = z.object({
   title: z.string(),
   category: BudgetCategorySchema,
   daysBeforeEvent: z.number().int().nonnegative(),
-  targetDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  targetDate: z.string(),
   priority: TaskPrioritySchema,
   dependsOn: z.array(z.string()).default([]),
   status: TaskStatusSchema,
@@ -76,6 +76,85 @@ export const TaskItemSchema = z.object({
   isOverdue: z.boolean().optional(),
   isAtRisk: z.boolean().optional()
 });
+
+import { 
+  EventState, 
+  BudgetState, 
+  TimelineState, 
+  QuoteItem, 
+  ChangeLogEntry,
+  BudgetCategory
+} from './types.js';
+
+export const BudgetStateSchema: z.ZodType<BudgetState, z.ZodTypeDef, any> = z.object({
+  totalBudgetINR: z.number().nonnegative(),
+  categories: z.record(BudgetCategorySchema, BudgetCategoryItemSchema) as any,
+  contingencyPercent: z.number().nonnegative(),
+  perGuestTotalINR: z.number().nonnegative(),
+  lastAiTradeoff: BudgetTradeoffAiResponseSchema.optional()
+}) as any;
+
+export const DateShiftImpactSchema = z.object({
+  previousDate: z.string(),
+  newDate: z.string(),
+  daysShifted: z.number(),
+  unrealisticTaskIds: z.array(z.string()),
+  compressionAdvice: z.string(),
+  suggestedDrops: z.array(z.string())
+});
+
+export const TimelineStateSchema: z.ZodType<TimelineState, z.ZodTypeDef, any> = z.object({
+  tasks: z.array(TaskItemSchema),
+  eventDate: z.string(),
+  hasCycles: z.boolean(),
+  criticalPathTaskIds: z.array(z.string()).default([]),
+  lastDateShiftImpact: DateShiftImpactSchema.optional()
+}) as any;
+
+export const ChangeLogEntrySchema: z.ZodType<ChangeLogEntry, z.ZodTypeDef, any> = z.object({
+  id: z.string(),
+  timestamp: z.string(),
+  fieldChanged: z.enum(['budget', 'guests', 'date', 'priorities', 'custom']),
+  previousValue: z.unknown().optional(),
+  newValue: z.unknown().optional(),
+  reason: z.string().default(''),
+  impactSummary: z.string().default('')
+}) as any;
+
+export const AdditionalChargeSchema = z.object({
+  item: z.string(),
+  amountINR: z.number().nonnegative()
+});
+
+export const QuoteItemSchema: z.ZodType<QuoteItem, z.ZodTypeDef, any> = z.object({
+  id: z.string(),
+  category: BudgetCategorySchema,
+  vendorName: z.string(),
+  basePriceINR: z.number().nonnegative(),
+  guestCapacity: z.number().nullable().default(null),
+  inclusions: z.array(z.string()).default([]),
+  exclusions: z.array(z.string()).default([]),
+  additionalChargesINR: z.number().nonnegative().default(0),
+  additionalChargesBreakdown: z.array(AdditionalChargeSchema).default([]),
+  paymentTerms: z.string().nullable().default(null),
+  cancellationPolicy: z.string().nullable().default(null),
+  missingInfo: z.array(z.string()).default([]),
+  redFlags: z.array(z.string()).default([]),
+  computedTotalCostINR: z.number().nonnegative(),
+  availabilityDisclaimer: z.string()
+}) as any;
+
+export const EventStateSchema: z.ZodType<EventState, z.ZodTypeDef, any> = z.object({
+  version: z.number().default(1),
+  id: z.string(),
+  profile: EventProfileSchema,
+  budget: BudgetStateSchema,
+  timeline: TimelineStateSchema,
+  vendorBriefs: z.record(z.string(), z.any()).default({}),
+  quotes: z.array(QuoteItemSchema).default([]),
+  changeLog: z.array(ChangeLogEntrySchema).default([]),
+  lastUpdated: z.string()
+}) as any;
 
 export const GeneratedTaskItemAiSchema = z.object({
   id: z.string(),
@@ -88,11 +167,6 @@ export const GeneratedTaskItemAiSchema = z.object({
 
 export const GeneratedTasksAiResponseSchema = z.object({
   tasks: z.array(GeneratedTaskItemAiSchema)
-});
-
-export const AdditionalChargeSchema = z.object({
-  item: z.string(),
-  amountINR: z.number().nonnegative()
 });
 
 export const QuoteExtractionAiResponseSchema = z.object({

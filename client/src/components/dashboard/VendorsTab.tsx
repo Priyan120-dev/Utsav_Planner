@@ -56,6 +56,10 @@ export const VendorsTab: React.FC = () => {
       setQuoteError('Please paste the vendor quotation message or email (at least 10 characters).');
       return;
     }
+    if (rawQuoteText.length > 10000) {
+      setQuoteError('Vendor quote text cannot exceed 10000 characters. Please shorten the pasted text.');
+      return;
+    }
 
     setIsExtractingQuote(true);
     setQuoteError(null);

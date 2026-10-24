@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { 
+  EventProfileSchema,
+  EventStateSchema,
+  TaskItem,
   ParsedProfileAiResponseSchema,
   BudgetTradeoffAiResponseSchema,
   GeneratedTasksAiResponseSchema,
@@ -28,7 +31,7 @@ export const aiRouter = Router();
 
 // 1. Parse Profile from Free Text
 const ParseProfileReqSchema = z.object({
-  freeText: z.string().min(5, 'Description must be at least 5 characters'),
+  freeText: z.string().min(5, 'Description must be at least 5 characters').max(5000, 'Description cannot exceed 5000 characters'),
   existingProfile: z.record(z.unknown()).optional()
 });
 
@@ -59,7 +62,7 @@ aiRouter.post('/parse-profile', async (req: Request, res: Response): Promise<voi
 
 // 2. Budget Trade-offs
 const BudgetTradeoffReqSchema = z.object({
-  eventState: z.any(), // EventState
+  eventState: EventStateSchema,
   categoryAdjusted: BudgetCategorySchema,
   newPercentage: z.number().min(0).max(100)
 });
@@ -97,7 +100,7 @@ aiRouter.post('/budget-tradeoffs', async (req: Request, res: Response): Promise<
 
 // 3. Generate Sequenced Tasks
 const GenerateTasksReqSchema = z.object({
-  eventProfile: z.any() // EventProfile
+  eventProfile: EventProfileSchema
 });
 
 aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<void> => {
@@ -123,16 +126,17 @@ aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<vo
     });
 
     // Code validation: check DAG for cycles
-    const rawTasks = generated.tasks.map(t => ({
+    const rawTasks: TaskItem[] = generated.tasks.map(t => ({
       ...t,
+      dependsOn: t.dependsOn || [],
       status: 'locked' as const,
       targetDate: ''
     }));
 
-    const hasCycles = detectCycles(rawTasks as any);
+    const hasCycles = detectCycles(rawTasks);
 
     // Compute deadlines and statuses deterministically in code
-    const evaluatedTasks = evaluateTaskStatuses(rawTasks as any, eventProfile.eventDate);
+    const evaluatedTasks = evaluateTaskStatuses(rawTasks, eventProfile.eventDate);
 
     res.json({
       tasks: evaluatedTasks,
@@ -146,7 +150,7 @@ aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<vo
 
 // 4. Date Shift Impact Analysis
 const DateShiftReqSchema = z.object({
-  eventState: z.any(),
+  eventState: EventStateSchema,
   newEventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 });
 
@@ -213,7 +217,7 @@ aiRouter.post('/date-shift-impact', async (req: Request, res: Response): Promise
 
 // 5. Vendor Brief & Negotiation Questions
 const VendorBriefReqSchema = z.object({
-  eventProfile: z.any(),
+  eventProfile: EventProfileSchema,
   category: BudgetCategorySchema,
   allocatedBudgetINR: z.number().nonnegative()
 });
@@ -253,7 +257,7 @@ aiRouter.post('/vendor-brief', async (req: Request, res: Response): Promise<void
 
 // 6. Extract Structured Quote from Raw Text
 const ExtractQuoteReqSchema = z.object({
-  rawText: z.string().min(10, 'Vendor quote text is too short to analyze'),
+  rawText: z.string().min(10, 'Vendor quote text is too short to analyze').max(10000, 'Vendor quote text cannot exceed 10000 characters'),
   category: BudgetCategorySchema
 });
 
@@ -288,10 +292,10 @@ aiRouter.post('/extract-quote', async (req: Request, res: Response): Promise<voi
 
 // 7. Dynamic Change Impact Assessment
 const DynamicChangeReqSchema = z.object({
-  eventState: z.any(),
+  eventState: EventStateSchema,
   changeType: z.enum(['budget', 'guests', 'date']),
   newValue: z.union([z.string(), z.number()]),
-  reason: z.string().optional()
+  reason: z.string().max(1000, 'Reason cannot exceed 1000 characters').optional()
 });
 
 aiRouter.post('/change-impact', async (req: Request, res: Response): Promise<void> => {
