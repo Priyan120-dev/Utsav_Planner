@@ -181,10 +181,13 @@ export function initializeBudgetState(
 ): BudgetState {
   const percentages = computeCategoryPercentages(occasion, priorities);
   const categories: Record<BudgetCategory, BudgetCategoryItem> = {} as any;
+  let totalAllocatedINR = 0;
 
   for (const cat of BUDGET_CATEGORIES) {
     const pct = percentages[cat];
     const amount = Math.round((totalBudgetINR * pct) / 100);
+    totalAllocatedINR += amount;
+
     const perGuest = expectedGuests > 0 ? Math.round(amount / expectedGuests) : 0;
 
     categories[cat] = {
@@ -195,6 +198,16 @@ export function initializeBudgetState(
       perGuestINR: perGuest,
       isContingency: cat === 'contingency'
     };
+  }
+
+  // Ensure total allocated amount strictly matches totalBudgetINR
+  const initDiff = totalBudgetINR - totalAllocatedINR;
+  if (initDiff !== 0) {
+    const leadCat: BudgetCategory = categories['catering'] ? 'catering' : 'venue';
+    categories[leadCat].allocatedAmountINR += initDiff;
+    categories[leadCat].perGuestINR = expectedGuests > 0 
+      ? Math.round(categories[leadCat].allocatedAmountINR / expectedGuests) 
+      : 0;
   }
 
   return {
@@ -275,19 +288,30 @@ export function rebalanceBudget(
 
   // Rebuild category items
   const newCategories: Record<BudgetCategory, BudgetCategoryItem> = {} as any;
+  let totalAllocatedINR = 0;
   for (const cat of BUDGET_CATEGORIES) {
     const pct = updatedPercentages[cat];
     const amount = Math.round((currentBudget.totalBudgetINR * pct) / 100);
-    const perGuest = expectedGuests > 0 ? Math.round(amount / expectedGuests) : 0;
+    totalAllocatedINR += amount;
 
     newCategories[cat] = {
       category: cat,
       label: CATEGORY_LABELS[cat],
       allocatedAmountINR: amount,
       percentage: pct,
-      perGuestINR: perGuest,
+      perGuestINR: expectedGuests > 0 ? Math.round(amount / expectedGuests) : 0,
       isContingency: cat === 'contingency'
     };
+  }
+
+  // Ensure total allocated amount strictly equals totalBudgetINR
+  const diffINR = currentBudget.totalBudgetINR - totalAllocatedINR;
+  if (diffINR !== 0) {
+    const adjustCat = targetCategory !== 'contingency' ? targetCategory : 'venue';
+    newCategories[adjustCat].allocatedAmountINR += diffINR;
+    newCategories[adjustCat].perGuestINR = expectedGuests > 0 
+      ? Math.round(newCategories[adjustCat].allocatedAmountINR / expectedGuests) 
+      : 0;
   }
 
   return {

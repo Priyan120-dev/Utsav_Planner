@@ -69,4 +69,44 @@ describe('Budget Pure Logic', () => {
     expect(updated.totalBudgetINR).toBe(2000000);
     expect(updated.perGuestTotalINR).toBe(10000);
   });
+
+  it('guarantees total allocation strictly equals total budget across multiple successive rebalances', () => {
+    const testBudgets = [250000, 1000000, 3500000, 1234567];
+    const guests = 150;
+
+    for (const totalBudget of testBudgets) {
+      let state = initializeBudgetState(totalBudget, 'wedding', ['Catering', 'Decor', 'Photography'], guests);
+
+      // Initial allocation strictly matches total budget
+      const initialAllocated = Object.values(state.categories).reduce((sum, c) => sum + c.allocatedAmountINR, 0);
+      expect(initialAllocated).toBe(totalBudget);
+
+      // Perform successive slider rebalances
+      const adjustments: Array<[Parameters<typeof rebalanceBudget>[1], number]> = [
+        ['venue', 35],
+        ['catering', 42],
+        ['decor', 18],
+        ['photography_videography', 12],
+        ['contingency', 8],
+        ['attire', 10],
+        ['entertainment', 8]
+      ];
+
+      for (const [cat, newPct] of adjustments) {
+        state = rebalanceBudget(state, cat, newPct, guests);
+
+        // Percentages always sum to 100%
+        const totalPct = Object.values(state.categories).reduce((sum, c) => sum + c.percentage, 0);
+        expect(totalPct).toBe(100);
+
+        // Total allocation INR ALWAYS stays equal to the total budget
+        const currentAllocated = Object.values(state.categories).reduce((sum, c) => sum + c.allocatedAmountINR, 0);
+        expect(currentAllocated).toBe(totalBudget);
+
+        // Emergency buffer never drops below 5%
+        expect(state.contingencyPercent).toBeGreaterThanOrEqual(5);
+        expect(state.categories.contingency.percentage).toBeGreaterThanOrEqual(5);
+      }
+    }
+  });
 });

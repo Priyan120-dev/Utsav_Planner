@@ -22,7 +22,9 @@ interface EventContextType {
   error: string | null;
   clearError: () => void;
   initializeEvent: (profile: EventProfile) => Promise<void>;
-  updateSliderPercentage: (category: BudgetCategory, newPercentage: number) => Promise<void>;
+  updateSliderPercentage: (category: BudgetCategory, newPercentage: number, signal?: AbortSignal) => Promise<void>;
+  rebalanceCategoryBudget: (category: BudgetCategory, newPercentage: number) => void;
+  setBudgetTradeoffAdvice: (tradeoff: { explanation: string; actionableOptions: string[]; disclaimer: string }) => void;
   toggleTaskStatus: (taskId: string) => void;
   saveVendorBrief: (brief: VendorBrief & { category: BudgetCategory }) => void;
   saveQuote: (quote: QuoteItem) => void;
@@ -175,48 +177,73 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   /**
+   * Synchronous pure rebalancing: instantly updates all categories,
+   * donut chart slices, per-guest amounts, and safety buffer with zero debounce.
+   */
+  const rebalanceCategoryBudget = useCallback((
+    category: BudgetCategory,
+    newPercentage: number
+  ) => {
+    setEventState(current => {
+      if (!current) return null;
+      const rebalancedBudget = rebalanceBudget(
+        current.budget,
+        category,
+        newPercentage,
+        current.profile.expectedGuests
+      );
+      return {
+        ...current,
+        budget: rebalancedBudget,
+        lastUpdated: new Date().toISOString()
+      };
+    });
+  }, []);
+
+  /**
+   * Updates lastAiTradeoff in state
+   */
+  const setBudgetTradeoffAdvice = useCallback((tradeoff: {
+    explanation: string;
+    actionableOptions: string[];
+    disclaimer: string;
+  }) => {
+    setEventState(current => {
+      if (!current) return null;
+      return {
+        ...current,
+        budget: {
+          ...current.budget,
+          lastAiTradeoff: tradeoff
+        }
+      };
+    });
+  }, []);
+
+  /**
    * Interactive slider update: pure code instantly rebalances deltas,
    * then calls AI service to fetch trade-off explanation and options.
    */
   const updateSliderPercentage = useCallback(async (
     category: BudgetCategory,
-    newPercentage: number
+    newPercentage: number,
+    signal?: AbortSignal
   ) => {
     if (!eventState) return;
 
     // 1. Instant pure arithmetic rebalancing
-    const rebalancedBudget = rebalanceBudget(
-      eventState.budget,
-      category,
-      newPercentage,
-      eventState.profile.expectedGuests
-    );
-
-    const updatedState: EventState = {
-      ...eventState,
-      budget: rebalancedBudget,
-      lastUpdated: new Date().toISOString()
-    };
-
-    setEventState(updatedState);
+    rebalanceCategoryBudget(category, newPercentage);
 
     // 2. Fetch AI trade-off analysis
     try {
-      const tradeoff = await api.getBudgetTradeoffAdvice(updatedState, category, newPercentage);
-      setEventState(current => {
-        if (!current) return null;
-        return {
-          ...current,
-          budget: {
-            ...current.budget,
-            lastAiTradeoff: tradeoff
-          }
-        };
-      });
-    } catch (err) {
+      const tradeoff = await api.getBudgetTradeoffAdvice(eventState, category, newPercentage, signal);
+      if (signal?.aborted) return;
+      setBudgetTradeoffAdvice(tradeoff);
+    } catch (err: any) {
+      if (err.name === 'AbortError' || signal?.aborted) return;
       console.warn('AI budget tradeoff evaluation error:', err);
     }
-  }, [eventState]);
+  }, [eventState, rebalanceCategoryBudget, setBudgetTradeoffAdvice]);
 
   /**
    * Toggles task status (ready -> in_progress -> done)
@@ -460,6 +487,8 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         clearError,
         initializeEvent,
         updateSliderPercentage,
+        rebalanceCategoryBudget,
+        setBudgetTradeoffAdvice,
         toggleTaskStatus,
         saveVendorBrief,
         saveQuote,

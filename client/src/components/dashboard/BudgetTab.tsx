@@ -1,65 +1,110 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useEvent } from '../../context/EventContext.js';
-import { BudgetCategory, BUDGET_CATEGORIES } from '@utsav/shared';
+import { BudgetCategory } from '@utsav/shared';
 import { AccessibleDonutChart } from '../charts/AccessibleDonutChart.js';
 import { DisclaimerBadge } from '../common/DisclaimerBadge.js';
 import { Sparkles, SlidersHorizontal } from 'lucide-react';
 import { useDebounce } from '../../hooks/useDebounce.js';
+import * as api from '../../services/api.js';
 
 export const BudgetTab: React.FC = () => {
-  const { eventState, updateSliderPercentage } = useEvent();
+  const { eventState, rebalanceCategoryBudget, setBudgetTradeoffAdvice } = useEvent();
   if (!eventState) return null;
 
   const { budget, profile } = eventState;
   const categories = Object.values(budget.categories);
 
-  // Local state for sliders so user gets instant 60fps drag response
-  const [sliderValues, setSliderValues] = useState<Record<BudgetCategory, number>>(() => {
-    const map: any = {};
-    for (const c of BUDGET_CATEGORIES) {
-      map[c] = budget.categories[c]?.percentage || 0;
-    }
-    return map;
-  });
+  // Keep a reference to the latest eventState for the AI advice call
+  const eventStateRef = useRef(eventState);
+  eventStateRef.current = eventState;
 
-  const [activeCategory, setActiveCategory] = useState<BudgetCategory | null>(null);
+  // Track in-flight request and sequence counter to discard stale responses
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestIdRef = useRef<number>(0);
+
   const [isAiAnalyzing, setIsAiAnalyzing] = useState<boolean>(false);
 
-  // Sync if external changes occur (like demo load or undo)
-  useEffect(() => {
-    const map: any = {};
-    for (const c of BUDGET_CATEGORIES) {
-      map[c] = budget.categories[c]?.percentage || 0;
-    }
-    setSliderValues(map);
-  }, [budget]);
+  // Pending category change to be sent to LLM after 700ms debounce
+  const [pendingAiChange, setPendingAiChange] = useState<{
+    category: BudgetCategory;
+    percentage: number;
+  } | null>(null);
 
-  // Debounced active slider value for calling the LLM
-  const debouncedSliderState = useDebounce({
-    category: activeCategory,
-    value: activeCategory ? sliderValues[activeCategory] : null
-  }, 700);
+  // Debounced active slider value ONLY for calling the LLM
+  const debouncedAiChange = useDebounce(pendingAiChange, 700);
 
-  useEffect(() => {
-    if (debouncedSliderState.category && debouncedSliderState.value !== null) {
-      const cat = debouncedSliderState.category;
-      const val = debouncedSliderState.value;
-      if (val !== budget.categories[cat]?.percentage) {
-        setIsAiAnalyzing(true);
-        updateSliderPercentage(cat, val).finally(() => {
-          setIsAiAnalyzing(false);
-        });
-      }
-    }
-  }, [debouncedSliderState]);
-
+  // 1. On every slider change, call pure rebalanceBudget synchronously
   const handleSliderChange = (cat: BudgetCategory, newPct: number) => {
-    setActiveCategory(cat);
-    setSliderValues(prev => ({
-      ...prev,
-      [cat]: newPct
-    }));
+    // Abort previous in-flight getBudgetTradeoffAdvice request whenever a new slider change occurs
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    requestIdRef.current++;
+
+    // Synchronously rebalance budget pure logic: instant donut chart, category cards, per-head and deltas update
+    rebalanceCategoryBudget(cat, newPct);
+
+    // Queue for debounced AI trade-off advice
+    setPendingAiChange({ category: cat, percentage: newPct });
   };
+
+  // 2. 700ms debounced effect ONLY for the LLM trade-off advice call
+  useEffect(() => {
+    if (!debouncedAiChange) return;
+
+    const { category, percentage } = debouncedAiChange;
+    const currentState = eventStateRef.current;
+    if (!currentState) return;
+
+    // Abort any lingering previous controller
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    const currentReqId = ++requestIdRef.current;
+
+    setIsAiAnalyzing(true);
+
+    api.getBudgetTradeoffAdvice(
+      currentState,
+      category,
+      percentage,
+      controller.signal
+    )
+      .then(tradeoff => {
+        // Ignore stale responses or aborted calls
+        if (controller.signal.aborted || requestIdRef.current !== currentReqId) {
+          return;
+        }
+        setBudgetTradeoffAdvice(tradeoff);
+      })
+      .catch(err => {
+        if (err.name === 'AbortError' || controller.signal.aborted) {
+          return; // Aborted cleanly, ignore
+        }
+        console.warn('AI budget tradeoff evaluation error:', err);
+      })
+      .finally(() => {
+        // Only turn off loading if this was the latest active request
+        if (!controller.signal.aborted && requestIdRef.current === currentReqId) {
+          setIsAiAnalyzing(false);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [debouncedAiChange, setBudgetTradeoffAdvice]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const aiTradeoff = budget.lastAiTradeoff;
 
@@ -151,9 +196,9 @@ export const BudgetTab: React.FC = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
           {categories.map(item => {
-            const currentVal = sliderValues[item.category] ?? item.percentage;
-            const currentAmount = Math.round((budget.totalBudgetINR * currentVal) / 100);
-            const currentPerHead = profile.expectedGuests > 0 ? Math.round(currentAmount / profile.expectedGuests) : 0;
+            const currentVal = item.percentage;
+            const currentAmount = item.allocatedAmountINR;
+            const currentPerHead = item.perGuestINR;
             const isContingency = item.isContingency;
 
             return (
