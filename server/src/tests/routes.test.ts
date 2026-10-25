@@ -89,6 +89,49 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     expect(res.body.additionalChargesINR).toBe(15000);
     expect(res.body.computedTotalCostINR).toBe(135000); // 120000 + 15000 computed deterministically
     expect(res.body.availabilityDisclaimer).toBe('Availability not verified: confirm directly with vendor.');
+    expect(res.body.tiers).toBeNull();
+  });
+
+  it('POST /api/ai/extract-quote computes tiered pricing in code and keeps unstated fields null', async () => {
+    const mockTieredExtraction = {
+      vendorName: 'Royal Feast Catering',
+      basePriceINR: 20000, // Service & transport fee
+      tiers: [
+        { upToGuests: 100, pricePerPlate: 1200 },
+        { upToGuests: 250, pricePerPlate: 1000 },
+        { upToGuests: 500, pricePerPlate: 850 }
+      ],
+      guestCapacity: null, // unstated
+      inclusions: ['Live chaat counter', '3-course buffet'],
+      exclusions: ['Mineral water bottles'],
+      additionalChargesBreakdown: [
+        { item: 'Staff gratuity', amountINR: 5000 }
+      ],
+      paymentTerms: null, // unstated
+      cancellationPolicy: null, // unstated
+      missingInfo: ['Payment schedule unstated'],
+      redFlags: []
+    };
+
+    vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockTieredExtraction as any);
+
+    const res = await request(app)
+      .post('/api/ai/extract-quote')
+      .send({
+        rawText: 'Royal Feast Catering quote: Base logistics fee Rs 20,000. Up to 100 guests: Rs 1200/plate, up to 250: Rs 1000/plate. Staff gratuity Rs 5000.',
+        category: 'catering',
+        guestCount: 200
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.vendorName).toBe('Royal Feast Catering');
+    expect(res.body.tiers).toHaveLength(3);
+    // Tier calculation: 200 guests falls into upToGuests: 250 -> 1000/plate = 200,000
+    // Total = 20,000 (base) + 200,000 (tiered) + 5,000 (additional) = 225,000
+    expect(res.body.computedTotalCostINR).toBe(225000);
+    expect(res.body.guestCapacity).toBeNull();
+    expect(res.body.paymentTerms).toBeNull();
+    expect(res.body.cancellationPolicy).toBeNull();
   });
 
   it('rejects disallowed CORS origins with status 403 and {"error":"Origin not allowed"}', async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { OnboardingWizard } from '../components/onboarding/OnboardingWizard.js';
 import { EventProvider } from '../context/EventContext.js';
 import * as api from '../services/api.js';
@@ -98,4 +98,115 @@ describe('OnboardingWizard Component', () => {
     fireEvent.change(answerInputs[0], { target: { value: 'Outdoor lawns preferred' } });
     expect(answerInputs[0]).toHaveValue('Outdoor lawns preferred');
   });
+
+  it('triggers structured re-parse with answers and merges without overwriting confirmed fields', async () => {
+    const parseSpy = vi.spyOn(api, 'parseProfileFromFreeText');
+
+    // First call returns initial profile with followUpQuestions
+    parseSpy.mockResolvedValueOnce({
+      occasion: 'wedding',
+      title: 'Confirmed Royal Wedding',
+      totalBudgetINR: 2500000,
+      expectedGuests: 250,
+      eventDate: '2026-11-20',
+      city: 'Udaipur',
+      atmosphereTheme: 'Royal Heritage',
+      culturalNeeds: ['Sangeet', 'Haldi'],
+      dietaryNeeds: ['Pure Vegetarian'],
+      accessibilityNeeds: [],
+      mustHaves: ['Folk Musicians'],
+      priorities: ['Catering & Dining', 'Venue & Grounds', 'Decor, Mandap & Lighting'],
+      followUpQuestions: [
+        'Do you have any specific dietary preferences?',
+        'Are there elderly guests needing accessibility?'
+      ]
+    });
+
+    // Second call (structured re-parse) returns enriched profile
+    parseSpy.mockResolvedValueOnce({
+      occasion: 'wedding',
+      title: 'Should Not Overwrite User Confirmed Title',
+      totalBudgetINR: 999999, // Should NOT overwrite confirmed 2500000
+      expectedGuests: 50,     // Should NOT overwrite confirmed 250
+      eventDate: '2027-01-01',// Should NOT overwrite confirmed date
+      city: 'Delhi',          // Should NOT overwrite confirmed Udaipur
+      atmosphereTheme: 'Royal Heritage',
+      culturalNeeds: ['Sangeet', 'Haldi', 'Mehendi Ceremony'],
+      dietaryNeeds: ['Jain Food Counter'],
+      accessibilityNeeds: ['Wheelchair Ramps'],
+      mustHaves: ['Folk Musicians', 'Golf Carts'],
+      priorities: ['Catering & Dining', 'Venue & Grounds', 'Decor, Mandap & Lighting'],
+      followUpQuestions: []
+    });
+
+    render(
+      <EventProvider>
+        <OnboardingWizard />
+      </EventProvider>
+    );
+
+    const textarea = screen.getByLabelText(/Describe your event in plain Hindi or English/i);
+    fireEvent.change(textarea, {
+      target: { value: 'Planning a royal wedding in Udaipur for 250 guests with 25 lakhs budget.' }
+    });
+
+    const submitBtn = screen.getByRole('button', { name: /Parse & Generate Plan/i });
+    fireEvent.click(submitBtn);
+
+    // Wait for follow-ups to show
+    expect(
+      await screen.findByText(/AI Orchestrator Clarification Questions \(Optional\):/i)
+    ).toBeInTheDocument();
+
+    const answerInputs = screen.getAllByPlaceholderText(/Your answer \(optional\)\.\.\./i);
+    fireEvent.change(answerInputs[0], { target: { value: 'Strict Jain food options needed' } });
+    fireEvent.change(answerInputs[1], { target: { value: 'Grandparents need wheelchair access' } });
+
+    // Click "Re-parse with Clarifications"
+    const reparseBtn = screen.getByRole('button', { name: /Re-parse with Clarifications/i });
+    fireEvent.click(reparseBtn);
+
+    // Verify 2nd API call arguments: includes original text + answers, and existing confirmed profile
+    await waitFor(() => expect(parseSpy).toHaveBeenCalledTimes(2));
+    const [combinedTextArg, existingProfileArg] = parseSpy.mock.calls[1];
+    expect(combinedTextArg).toContain('Planning a royal wedding in Udaipur');
+    expect(combinedTextArg).toContain('CLARIFICATIONS & ANSWERS:');
+    expect(combinedTextArg).toContain('Strict Jain food options needed');
+    expect(combinedTextArg).toContain('Grandparents need wheelchair access');
+    expect(existingProfileArg?.city).toBe('Udaipur');
+    expect(existingProfileArg?.totalBudgetINR).toBe(2500000);
+    expect(existingProfileArg?.title).toBe('Confirmed Royal Wedding');
+
+    // Wait for clarification box to dismiss once follow-up questions are resolved
+    await waitFor(() => {
+      expect(screen.queryByText(/AI Orchestrator Clarification Questions/i)).not.toBeInTheDocument();
+    });
+
+    // Verify Step 1 fields (Occasion & Scale) were preserved
+    expect(screen.getByDisplayValue('Confirmed Royal Wedding')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2500000')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('250')).toBeInTheDocument();
+
+    // Navigate to Step 2: Date & Location
+    const nextToStep2Btn = screen.getByRole('button', { name: /Next: Date & Location/i });
+    fireEvent.click(nextToStep2Btn);
+
+    // Verify Step 2 fields were preserved
+    expect(screen.getByDisplayValue('Udaipur')).toBeInTheDocument();
+
+    // Navigate to Step 3: Traditions & Priorities
+    const nextToStep3Btn = screen.getByRole('button', { name: /Next: Traditions & Priorities/i });
+    fireEvent.click(nextToStep3Btn);
+
+    // Assert lists were merged in Step 3 without overwriting previous items
+    const culturalInput = screen.getByDisplayValue(/Sangeet, Haldi, Mehendi Ceremony/i);
+    expect(culturalInput).toBeInTheDocument();
+
+    const dietaryInput = screen.getByDisplayValue(/Pure Vegetarian, Jain Food Counter/i);
+    expect(dietaryInput).toBeInTheDocument();
+
+    const accessInput = screen.getByDisplayValue(/Wheelchair Ramps/i);
+    expect(accessInput).toBeInTheDocument();
+  });
 });
+

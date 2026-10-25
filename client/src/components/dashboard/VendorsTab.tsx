@@ -65,7 +65,7 @@ export const VendorsTab: React.FC = () => {
     setQuoteError(null);
 
     try {
-      const extractedQuote = await api.extractVendorQuote(rawQuoteText, quoteCategory);
+      const extractedQuote = await api.extractVendorQuote(rawQuoteText, quoteCategory, profile.expectedGuests);
       saveQuote(extractedQuote);
       setRawQuoteText('');
       setIsParsingQuote(false);
@@ -336,6 +336,12 @@ export const VendorsTab: React.FC = () => {
 
                     <td className="p-3 font-medium">
                       ₹{quote.basePriceINR.toLocaleString('en-IN')}
+                      {quote.tiers && quote.tiers.length > 0 && (
+                        <div className="text-[10px] text-utsav-saffron-800 mt-1">
+                          <span className="font-semibold">Tiers:</span>{' '}
+                          {quote.tiers.map(t => `≤${t.upToGuests}: ₹${t.pricePerPlate}/plate`).join(', ')}
+                        </div>
+                      )}
                     </td>
 
                     <td className="p-3">

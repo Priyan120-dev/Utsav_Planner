@@ -103,11 +103,12 @@ export async function generateVendorBrief(
 export async function extractVendorQuote(
   rawText: string,
   category: BudgetCategory,
+  guestCount?: number,
   signal?: AbortSignal
 ): Promise<QuoteItem> {
   return request('/ai/extract-quote', {
     method: 'POST',
-    body: JSON.stringify({ rawText, category }),
+    body: JSON.stringify({ rawText, category, guestCount }),
     signal
   });
 }

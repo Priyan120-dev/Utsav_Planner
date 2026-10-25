@@ -23,7 +23,7 @@ const STATUS_CONFIG: Record<TaskStatus, { label: string; badge: string; icon: an
 };
 
 export const TimelineTab: React.FC = () => {
-  const { eventState, toggleTaskStatus } = useEvent();
+  const { eventState, toggleTaskStatus, commitDynamicChange } = useEvent();
   if (!eventState) return null;
 
   const { timeline } = eventState;
@@ -52,6 +52,21 @@ export const TimelineTab: React.FC = () => {
     } finally {
       setIsDateShifting(false);
     }
+  };
+
+  const handleApplyDateShift = () => {
+    if (!dateShiftResult || !newSimulatedDate) return;
+    const days = dateShiftResult.daysShifted;
+    const direction = days < 0 ? 'Preponed' : 'Postponed';
+    const summary = dateShiftResult.advice?.compressionAdvice || `${direction} celebration by ${Math.abs(days)} days to ${newSimulatedDate}.`;
+    commitDynamicChange(
+      'date',
+      newSimulatedDate,
+      `Timeline date shift (${direction} by ${Math.abs(days)} days)`,
+      summary
+    );
+    setIsSimulatingDate(false);
+    setDateShiftResult(null);
   };
 
   const filteredTasks = tasks.filter(t => {
@@ -179,6 +194,27 @@ export const TimelineTab: React.FC = () => {
                   </ul>
                 </div>
               )}
+
+              <div className="flex flex-wrap items-center justify-end gap-3 pt-3 border-t border-amber-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSimulatingDate(false);
+                    setDateShiftResult(null);
+                  }}
+                  className="px-4 py-2 text-xs font-semibold rounded-xl border border-amber-300 text-amber-900 bg-white hover:bg-amber-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApplyDateShift}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl bg-utsav-saffron-600 text-white hover:bg-utsav-saffron-700 shadow-xs transition-colors cursor-pointer"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Confirm and apply shift to plan</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

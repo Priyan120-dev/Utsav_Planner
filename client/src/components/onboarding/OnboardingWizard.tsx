@@ -40,6 +40,7 @@ export const OnboardingWizard: React.FC = () => {
   // Targeted follow-up questions from AI
   const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<number, string>>({});
+  const [recommendations, setRecommendations] = useState<any>(null);
 
   // Wizard step state
   const [step, setStep] = useState<number>(1);
@@ -64,6 +65,115 @@ export const OnboardingWizard: React.FC = () => {
     'Decor, Mandap & Lighting'
   ]);
 
+  // Helper to merge parsed profile into wizard state without overwriting confirmed fields
+  const applyParsedProfile = (parsed: any, isReparse = false) => {
+    if (!isReparse) {
+      if (parsed.occasion) setOccasion(parsed.occasion);
+      if (parsed.title) setTitle(parsed.title);
+      if (parsed.totalBudgetINR) setBudgetINR(parsed.totalBudgetINR);
+      if (parsed.expectedGuests) setGuests(parsed.expectedGuests);
+      if (parsed.eventDate) setEventDate(parsed.eventDate);
+      if (parsed.city) setCity(parsed.city);
+      if (parsed.atmosphereTheme) setTheme(parsed.atmosphereTheme);
+      if (parsed.culturalNeeds?.length) setCulturalNeedsText(parsed.culturalNeeds.join(', '));
+      if (parsed.dietaryNeeds?.length) setDietaryNeedsText(parsed.dietaryNeeds.join(', '));
+      if (parsed.accessibilityNeeds?.length) setAccessibilityNeedsText(parsed.accessibilityNeeds.join(', '));
+      if (parsed.mustHaves?.length) setMustHavesText(parsed.mustHaves.join(', '));
+      if (parsed.priorities?.length === 3) setSelectedPriorities(parsed.priorities);
+    } else {
+      // Structured re-parse merge: preserve confirmed scalar fields, merge list arrays
+      if (parsed.culturalNeeds?.length) {
+        const existing = culturalNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+        const merged = Array.from(new Set([...existing, ...parsed.culturalNeeds]));
+        setCulturalNeedsText(merged.join(', '));
+      }
+      if (parsed.dietaryNeeds?.length) {
+        const existing = dietaryNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+        const merged = Array.from(new Set([...existing, ...parsed.dietaryNeeds]));
+        setDietaryNeedsText(merged.join(', '));
+      }
+      if (parsed.accessibilityNeeds?.length) {
+        const existing = accessibilityNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+        const merged = Array.from(new Set([...existing, ...parsed.accessibilityNeeds]));
+        setAccessibilityNeedsText(merged.join(', '));
+      }
+      if (parsed.mustHaves?.length) {
+        const existing = mustHavesText.split(',').map(s => s.trim()).filter(Boolean);
+        const merged = Array.from(new Set([...existing, ...parsed.mustHaves]));
+        setMustHavesText(merged.join(', '));
+      }
+      // Only adopt new title/theme if user hasn't explicitly customized them
+      if (!title || title === 'Our Royal Family Celebration') {
+        if (parsed.title) setTitle(parsed.title);
+      }
+      if (!theme || theme === 'Regal heritage with marigold & brass aesthetics') {
+        if (parsed.atmosphereTheme) setTheme(parsed.atmosphereTheme);
+      }
+    }
+
+    if (parsed.recommendations) {
+      setRecommendations(parsed.recommendations);
+    }
+
+    if (parsed.followUpQuestions && parsed.followUpQuestions.length > 0) {
+      setFollowUpQuestions(parsed.followUpQuestions);
+    } else {
+      setFollowUpQuestions([]);
+    }
+  };
+
+  // Build combined text containing original free text and answered follow-up questions
+  const buildCombinedPromptText = () => {
+    const clarifications = followUpQuestions
+      .map((q, idx) => {
+        const a = followUpAnswers[idx]?.trim();
+        return a ? `Question: ${q}\nAnswer: ${a}` : null;
+      })
+      .filter(Boolean)
+      .join('\n\n');
+
+    return clarifications
+      ? `${freeText}\n\nCLARIFICATIONS & ANSWERS:\n${clarifications}`
+      : freeText;
+  };
+
+  // Build current confirmed profile object
+  const getConfirmedProfileContext = (): Partial<EventProfile> => ({
+    occasion,
+    title,
+    totalBudgetINR: budgetINR,
+    expectedGuests: guests,
+    eventDate,
+    city,
+    atmosphereTheme: theme,
+    culturalNeeds: culturalNeedsText.split(',').map(s => s.trim()).filter(Boolean),
+    dietaryNeeds: dietaryNeedsText.split(',').map(s => s.trim()).filter(Boolean),
+    accessibilityNeeds: accessibilityNeedsText.split(',').map(s => s.trim()).filter(Boolean),
+    mustHaves: mustHavesText.split(',').map(s => s.trim()).filter(Boolean),
+    priorities: selectedPriorities as [string, string, string],
+    recommendations
+  });
+
+  // Explicit structured re-parse when user answers follow-up questions
+  const handleReparseWithAnswers = async () => {
+    const hasAnswers = Object.values(followUpAnswers).some(a => a && a.trim());
+    if (!hasAnswers) return;
+
+    setIsParsingAi(true);
+    setParseError(null);
+
+    try {
+      const combined = buildCombinedPromptText();
+      const existing = getConfirmedProfileContext();
+      const reparsed = await api.parseProfileFromFreeText(combined, existing);
+      applyParsedProfile(reparsed, true);
+    } catch (err: any) {
+      setParseError(err.message || 'Failed to re-parse clarifications with AI.');
+    } finally {
+      setIsParsingAi(false);
+    }
+  };
+
   // Handle Free-text AI parsing
   const handleParseFreeText = async () => {
     if (!freeText.trim() || freeText.length < 10) {
@@ -80,23 +190,9 @@ export const OnboardingWizard: React.FC = () => {
 
     try {
       const parsed = await api.parseProfileFromFreeText(freeText);
-      // Populate wizard fields with parsed data
-      if (parsed.occasion) setOccasion(parsed.occasion);
-      if (parsed.title) setTitle(parsed.title);
-      if (parsed.totalBudgetINR) setBudgetINR(parsed.totalBudgetINR);
-      if (parsed.expectedGuests) setGuests(parsed.expectedGuests);
-      if (parsed.eventDate) setEventDate(parsed.eventDate);
-      if (parsed.city) setCity(parsed.city);
-      if (parsed.atmosphereTheme) setTheme(parsed.atmosphereTheme);
-      if (parsed.culturalNeeds?.length) setCulturalNeedsText(parsed.culturalNeeds.join(', '));
-      if (parsed.dietaryNeeds?.length) setDietaryNeedsText(parsed.dietaryNeeds.join(', '));
-      if (parsed.accessibilityNeeds?.length) setAccessibilityNeedsText(parsed.accessibilityNeeds.join(', '));
-      if (parsed.mustHaves?.length) setMustHavesText(parsed.mustHaves.join(', '));
-      if (parsed.priorities?.length === 3) setSelectedPriorities(parsed.priorities);
+      applyParsedProfile(parsed, false);
 
-      if (parsed.followUpQuestions && parsed.followUpQuestions.length > 0) {
-        setFollowUpQuestions(parsed.followUpQuestions);
-      } else {
+      if (!parsed.followUpQuestions || parsed.followUpQuestions.length === 0) {
         // If parsed cleanly with no ambiguities, directly initialize!
         const profile: EventProfile = {
           occasion: parsed.occasion || occasion,
@@ -144,10 +240,38 @@ export const OnboardingWizard: React.FC = () => {
 
   // Complete wizard
   const handleCompleteWizard = async () => {
-    // If follow up answers were given, append them to cultural or must haves
-    const answersText = Object.values(followUpAnswers).filter(Boolean).join('; ');
-    const finalCultural = culturalNeedsText.split(',').map(s => s.trim()).filter(Boolean);
-    if (answersText) finalCultural.push(`Clarifications: ${answersText}`);
+    // If user answered follow-up questions, run structured re-parse and merge
+    let finalCultural = culturalNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+    let finalDietary = dietaryNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+    let finalAccess = accessibilityNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+    let finalMustHaves = mustHavesText.split(',').map(s => s.trim()).filter(Boolean);
+    let finalRecs = recommendations;
+
+    const hasAnswers = Object.values(followUpAnswers).some(a => a && a.trim());
+    if (hasAnswers) {
+      try {
+        const combined = buildCombinedPromptText();
+        const existing = getConfirmedProfileContext();
+        const reparsed = await api.parseProfileFromFreeText(combined, existing);
+        if (reparsed.culturalNeeds?.length) {
+          finalCultural = Array.from(new Set([...finalCultural, ...reparsed.culturalNeeds]));
+        }
+        if (reparsed.dietaryNeeds?.length) {
+          finalDietary = Array.from(new Set([...finalDietary, ...reparsed.dietaryNeeds]));
+        }
+        if (reparsed.accessibilityNeeds?.length) {
+          finalAccess = Array.from(new Set([...finalAccess, ...reparsed.accessibilityNeeds]));
+        }
+        if (reparsed.mustHaves?.length) {
+          finalMustHaves = Array.from(new Set([...finalMustHaves, ...reparsed.mustHaves]));
+        }
+        if (reparsed.recommendations) {
+          finalRecs = reparsed.recommendations;
+        }
+      } catch (err) {
+        console.warn('Re-parse prior to plan generation encountered an issue, proceeding with confirmed fields:', err);
+      }
+    }
 
     const profile: EventProfile = {
       occasion,
@@ -158,14 +282,15 @@ export const OnboardingWizard: React.FC = () => {
       city,
       atmosphereTheme: theme,
       culturalNeeds: finalCultural,
-      dietaryNeeds: dietaryNeedsText.split(',').map(s => s.trim()).filter(Boolean),
-      accessibilityNeeds: accessibilityNeedsText.split(',').map(s => s.trim()).filter(Boolean),
-      mustHaves: mustHavesText.split(',').map(s => s.trim()).filter(Boolean),
+      dietaryNeeds: finalDietary,
+      accessibilityNeeds: finalAccess,
+      mustHaves: finalMustHaves,
       priorities: [
         selectedPriorities[0] || 'Catering & Dining',
         selectedPriorities[1] || 'Decor, Mandap & Lighting',
         selectedPriorities[2] || 'Photography & Cinematic Video'
-      ]
+      ],
+      recommendations: finalRecs
     };
 
     await initializeEvent(profile);
@@ -305,6 +430,17 @@ export const OnboardingWizard: React.FC = () => {
                     />
                   </div>
                 ))}
+              </div>
+              <div className="mt-3.5 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleReparseWithAnswers}
+                  disabled={isParsingAi || !Object.values(followUpAnswers).some(a => a && a.trim())}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-utsav-saffron-600 text-white hover:bg-utsav-saffron-700 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{isParsingAi ? 'Re-parsing with AI...' : 'Re-parse with Clarifications'}</span>
+                </button>
               </div>
             </div>
           )}

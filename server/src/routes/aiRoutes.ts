@@ -258,7 +258,8 @@ aiRouter.post('/vendor-brief', async (req: Request, res: Response): Promise<void
 // 6. Extract Structured Quote from Raw Text
 const ExtractQuoteReqSchema = z.object({
   rawText: z.string().min(10, 'Vendor quote text is too short to analyze').max(10000, 'Vendor quote text cannot exceed 10000 characters'),
-  category: BudgetCategorySchema
+  category: BudgetCategorySchema,
+  guestCount: z.number().int().positive().optional()
 });
 
 aiRouter.post('/extract-quote', async (req: Request, res: Response): Promise<void> => {
@@ -269,7 +270,7 @@ aiRouter.post('/extract-quote', async (req: Request, res: Response): Promise<voi
       return;
     }
 
-    const { rawText, category } = parseResult.data;
+    const { rawText, category, guestCount } = parseResult.data;
     const prompt = buildQuoteExtractorPrompt(rawText, category);
 
     // LLM extracts structured fields without inventing values
@@ -281,7 +282,7 @@ aiRouter.post('/extract-quote', async (req: Request, res: Response): Promise<voi
     });
 
     // Pure code creates normalized QuoteItem and deterministically calculates TCO
-    const normalizedQuote = createNormalizedQuote(extraction, category);
+    const normalizedQuote = createNormalizedQuote(extraction, category, guestCount);
 
     res.json(normalizedQuote);
   } catch (error: any) {

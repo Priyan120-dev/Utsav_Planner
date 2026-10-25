@@ -114,11 +114,17 @@ export interface AdditionalCharge {
   amountINR: number;
 }
 
+export interface PricingTier {
+  upToGuests: number;
+  pricePerPlate: number;
+}
+
 export interface QuoteItem {
   id: string;
   category: BudgetCategory;
   vendorName: string;
   basePriceINR: number;
+  tiers?: PricingTier[] | null;
   guestCapacity: number | null;
   inclusions: string[];
   exclusions: string[];
@@ -128,7 +134,7 @@ export interface QuoteItem {
   cancellationPolicy: string | null;
   missingInfo: string[];
   redFlags: string[];
-  computedTotalCostINR: number; // base + additional charges computed deterministically
+  computedTotalCostINR: number; // base + additional charges + (tier pricing if applicable) computed deterministically
   availabilityDisclaimer: string;
 }
 

@@ -126,11 +126,17 @@ export const AdditionalChargeSchema = z.object({
   amountINR: z.number().nonnegative()
 });
 
+export const PricingTierSchema = z.object({
+  upToGuests: z.number().int().positive(),
+  pricePerPlate: z.number().nonnegative()
+});
+
 export const QuoteItemSchema: z.ZodType<QuoteItem, z.ZodTypeDef, any> = z.object({
   id: z.string(),
   category: BudgetCategorySchema,
   vendorName: z.string(),
   basePriceINR: z.number().nonnegative(),
+  tiers: z.array(PricingTierSchema).nullable().optional().default(null),
   guestCapacity: z.number().nullable().default(null),
   inclusions: z.array(z.string()).default([]),
   exclusions: z.array(z.string()).default([]),
@@ -172,6 +178,7 @@ export const GeneratedTasksAiResponseSchema = z.object({
 export const QuoteExtractionAiResponseSchema = z.object({
   vendorName: z.string().min(1),
   basePriceINR: z.number().nonnegative(),
+  tiers: z.array(PricingTierSchema).nullable().optional().default(null),
   guestCapacity: z.number().nullable().default(null),
   inclusions: z.array(z.string()).default([]),
   exclusions: z.array(z.string()).default([]),
