@@ -13,6 +13,7 @@ import {
   ChangeLogEntry
 } from '@utsav/shared';
 import * as api from '../services/api.js';
+import { useLiveAnnounce } from '../hooks/useLiveAnnounce.js';
 
 const STORAGE_KEY = 'utsav_planner_event_state_v1';
 
@@ -20,6 +21,8 @@ interface EventContextType {
   eventState: EventState | null;
   isLoading: boolean;
   error: string | null;
+  announcement: string;
+  announce: (message: string) => void;
   clearError: () => void;
   initializeEvent: (profile: EventProfile) => Promise<void>;
   updateSliderPercentage: (category: BudgetCategory, newPercentage: number, signal?: AbortSignal) => Promise<void>;
@@ -54,6 +57,14 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const { announcement, announce } = useLiveAnnounce();
+
+  // Announce errors to screen readers
+  useEffect(() => {
+    if (error) {
+      announce(`Error: ${error}`);
+    }
+  }, [error, announce]);
 
   // Sync state to localStorage whenever eventState changes
   useEffect(() => {
@@ -169,12 +180,15 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       };
 
       setEventState(newState);
+      announce(`Event initialized with ${evaluatedTasks.length} timeline tasks generated.`);
     } catch (err: any) {
-      setError(err.message || 'Failed to initialize event.');
+      const msg = err.message || 'Failed to initialize event.';
+      setError(msg);
+      announce(`Error: ${msg}`);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [announce]);
 
   /**
    * Synchronous pure rebalancing: instantly updates all categories,
@@ -198,7 +212,8 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         lastUpdated: new Date().toISOString()
       };
     });
-  }, []);
+    announce(`Budget rebalanced for ${category}.`);
+  }, [announce]);
 
   /**
    * Updates lastAiTradeoff in state
@@ -307,7 +322,8 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         lastUpdated: new Date().toISOString()
       };
     });
-  }, []);
+    announce(`Vendor quote parsed and saved for ${quote.vendorName}.`);
+  }, [announce]);
 
   /**
    * Commits a dynamic in-flight change to budget, guests, or date,
@@ -364,7 +380,8 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         lastUpdated: new Date().toISOString()
       };
     });
-  }, []);
+    announce(`In-flight change applied to ${changeType}. ${impactSummary || 'Updated parameters.'}`);
+  }, [announce]);
 
   /**
    * 1-Click Undo for the last changeLog entry
@@ -406,7 +423,8 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         lastUpdated: new Date().toISOString()
       };
     });
-  }, []);
+    announce('Last change undone. Restored previous event state.');
+  }, [announce]);
 
   /**
    * Loads an authentic Indian celebration demo profile and triggers LIVE AI generation
@@ -484,6 +502,8 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         eventState,
         isLoading,
         error,
+        announcement,
+        announce,
         clearError,
         initializeEvent,
         updateSliderPercentage,

@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useEvent } from '../../context/EventContext.js';
 import { BudgetCategory } from '@utsav/shared';
 import { AccessibleDonutChart } from '../charts/AccessibleDonutChart.js';
+import { AccessibleBarChart } from '../charts/AccessibleBarChart.js';
 import { DisclaimerBadge } from '../common/DisclaimerBadge.js';
-import { Sparkles, SlidersHorizontal } from 'lucide-react';
+import { Sparkles, SlidersHorizontal, PieChart, BarChart3, Table } from 'lucide-react';
 import { useDebounce } from '../../hooks/useDebounce.js';
 import * as api from '../../services/api.js';
 
@@ -13,6 +14,9 @@ export const BudgetTab: React.FC = () => {
 
   const { budget, profile } = eventState;
   const categories = Object.values(budget.categories);
+
+  // View format toggle state (Donut / Bar / Table)
+  const [viewFormat, setViewFormat] = useState<'donut' | 'bar' | 'table'>('donut');
 
   // Keep a reference to the latest eventState for the AI advice call
   const eventStateRef = useRef(eventState);
@@ -132,8 +136,63 @@ export const BudgetTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Chart Section */}
-      <AccessibleDonutChart budget={budget} />
+      {/* Chart Section with Donut / Bar / Table View Toggle */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold text-utsav-cream-800">
+            Chart View:
+          </span>
+          <div
+            role="group"
+            aria-label="Budget visual view format"
+            className="flex items-center gap-1 bg-white p-1 rounded-xl border border-utsav-cream-200 shadow-2xs"
+          >
+            <button
+              type="button"
+              aria-pressed={viewFormat === 'donut'}
+              onClick={() => setViewFormat('donut')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-utsav-saffron-500 ${
+                viewFormat === 'donut'
+                  ? 'bg-utsav-saffron-600 text-white shadow-2xs'
+                  : 'text-utsav-cream-800 hover:text-utsav-cream-900 hover:bg-utsav-cream-50'
+              }`}
+            >
+              <PieChart className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Donut</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={viewFormat === 'bar'}
+              onClick={() => setViewFormat('bar')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-utsav-saffron-500 ${
+                viewFormat === 'bar'
+                  ? 'bg-utsav-saffron-600 text-white shadow-2xs'
+                  : 'text-utsav-cream-800 hover:text-utsav-cream-900 hover:bg-utsav-cream-50'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Bar</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={viewFormat === 'table'}
+              onClick={() => setViewFormat('table')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-utsav-saffron-500 ${
+                viewFormat === 'table'
+                  ? 'bg-utsav-saffron-600 text-white shadow-2xs'
+                  : 'text-utsav-cream-800 hover:text-utsav-cream-900 hover:bg-utsav-cream-50'
+              }`}
+            >
+              <Table className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Table</span>
+            </button>
+          </div>
+        </div>
+
+        {viewFormat === 'donut' && <AccessibleDonutChart budget={budget} forcedView="chart" />}
+        {viewFormat === 'bar' && <AccessibleBarChart budget={budget} forcedView="chart" />}
+        {viewFormat === 'table' && <AccessibleDonutChart budget={budget} forcedView="table" />}
+      </div>
 
       {/* Dynamic AI Trade-off Advisory Box */}
       {aiTradeoff && (

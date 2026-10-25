@@ -11,7 +11,7 @@ import { ErrorAlert } from './components/common/ErrorAlert.js';
 import { LayoutDashboard, Wallet, CalendarClock, Store, GitCompare, X } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const { eventState, error, clearError } = useEvent();
+  const { eventState, error, clearError, announcement } = useEvent();
   const [activeTab, setActiveTab] = useState<'overview' | 'budget' | 'timeline' | 'vendors' | 'changes'>('overview');
   const [isSomethingChangedModalOpen, setIsSomethingChangedModalOpen] = useState<boolean>(false);
 
@@ -23,8 +23,40 @@ export const App: React.FC = () => {
     { id: 'changes', label: 'Changes & History', icon: GitCompare }
   ] as const;
 
+  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let nextIndex = index;
+    if (e.key === 'ArrowRight') {
+      nextIndex = (index + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft') {
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      nextIndex = 0;
+    } else if (e.key === 'End') {
+      nextIndex = tabs.length - 1;
+    } else {
+      return;
+    }
+
+    e.preventDefault();
+    const nextTab = tabs[nextIndex];
+    setActiveTab(nextTab.id);
+    requestAnimationFrame(() => {
+      document.getElementById(`tab-${nextTab.id}`)?.focus();
+    });
+  };
+
   return (
     <div className="min-h-screen bg-utsav-cream-50 flex flex-col font-sans">
+      {/* Visually hidden Live Announcer Region for screen readers */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {announcement}
+      </div>
+
       {/* Header */}
       <Header onOpenSomethingChanged={() => setIsSomethingChangedModalOpen(true)} />
 
@@ -41,19 +73,27 @@ export const App: React.FC = () => {
           <div className="space-y-6">
             {/* Navigation Tabs Bar */}
             <div className="bg-white rounded-2xl p-1.5 border border-utsav-cream-200 shadow-xs flex items-center justify-between overflow-x-auto scrollbar-none">
-              <nav className="flex items-center gap-1 min-w-max" aria-label="Dashboard navigation tabs">
-                {tabs.map(tab => {
+              <div
+                role="tablist"
+                aria-label="Dashboard sections"
+                className="flex items-center gap-1 min-w-max"
+              >
+                {tabs.map((tab, index) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
 
                   return (
                     <button
                       key={tab.id}
+                      id={`tab-${tab.id}`}
                       type="button"
                       role="tab"
                       aria-selected={isActive}
+                      aria-controls={`panel-${tab.id}`}
+                      tabIndex={isActive ? 0 : -1}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      onKeyDown={e => handleTabKeyDown(e, index)}
+                      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-utsav-saffron-500 focus:ring-offset-1 ${
                         isActive
                           ? 'bg-utsav-saffron-600 text-white shadow-2xs'
                           : 'text-utsav-cream-800 hover:text-utsav-cream-900 hover:bg-utsav-cream-50'
@@ -64,7 +104,7 @@ export const App: React.FC = () => {
                     </button>
                   );
                 })}
-              </nav>
+              </div>
 
               <div className="hidden md:flex items-center gap-2 pr-2 text-xs text-utsav-cream-800">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -73,7 +113,13 @@ export const App: React.FC = () => {
             </div>
 
             {/* Active Tab Panel */}
-            <div role="tabpanel" aria-label={activeTab}>
+            <div
+              role="tabpanel"
+              id={`panel-${activeTab}`}
+              aria-labelledby={`tab-${activeTab}`}
+              tabIndex={0}
+              className="focus:outline-hidden"
+            >
               {activeTab === 'overview' && <OverviewTab />}
               {activeTab === 'budget' && <BudgetTab />}
               {activeTab === 'timeline' && <TimelineTab />}

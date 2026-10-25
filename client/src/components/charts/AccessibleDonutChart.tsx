@@ -4,9 +4,10 @@ import { Table, PieChart } from 'lucide-react';
 
 interface AccessibleDonutChartProps {
   budget: BudgetState;
+  forcedView?: 'chart' | 'table';
 }
 
-const CATEGORY_COLORS: Record<BudgetCategory, string> = {
+export const CATEGORY_COLORS: Record<BudgetCategory, string> = {
   venue: '#c2410c', // saffron-700
   catering: '#ea580c', // saffron-600
   decor: '#eab308', // marigold-500
@@ -19,9 +20,11 @@ const CATEGORY_COLORS: Record<BudgetCategory, string> = {
   contingency: '#b45309' // amber-700
 };
 
-export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budget }) => {
-  const [showTable, setShowTable] = useState<boolean>(false);
+export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budget, forcedView }) => {
+  const [showTableInternal, setShowTableInternal] = useState<boolean>(false);
   const [hoveredCategory, setHoveredCategory] = useState<BudgetCategory | null>(null);
+
+  const showTable = forcedView ? forcedView === 'table' : showTableInternal;
 
   const categories = Object.values(budget.categories);
   const total = budget.totalBudgetINR;
@@ -60,25 +63,27 @@ export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budg
         </div>
 
         {/* Accessibility table toggle */}
-        <button
-          type="button"
-          onClick={() => setShowTable(!showTable)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-utsav-saffron-800 bg-utsav-saffron-50 hover:bg-utsav-saffron-100 border border-utsav-saffron-200 transition-colors cursor-pointer"
-          aria-expanded={showTable}
-          aria-controls="budget-data-table"
-        >
-          {showTable ? (
-            <>
-              <PieChart className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Show Chart</span>
-            </>
-          ) : (
-            <>
-              <Table className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Accessible Table</span>
-            </>
-          )}
-        </button>
+        {!forcedView && (
+          <button
+            type="button"
+            onClick={() => setShowTableInternal(!showTableInternal)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg text-utsav-saffron-800 bg-utsav-saffron-50 hover:bg-utsav-saffron-100 border border-utsav-saffron-200 transition-colors cursor-pointer"
+            aria-expanded={showTable}
+            aria-controls="budget-data-table"
+          >
+            {showTable ? (
+              <>
+                <PieChart className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Show Chart</span>
+              </>
+            ) : (
+              <>
+                <Table className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>Accessible Table</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {showTable ? (
@@ -144,6 +149,7 @@ export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budg
               {slices.map(slice => (
                 <circle
                   key={slice.category}
+                  role="graphics-symbol"
                   cx={size / 2}
                   cy={size / 2}
                   r={radius}
