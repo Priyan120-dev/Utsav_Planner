@@ -2,7 +2,7 @@
 > **GenAI-Powered Indian Celebration & Event Planning Orchestrator**  
 > Architected for Weddings, Milestone Birthdays, Anniversaries, and Community Festivals.
 
-[![Tests](https://img.shields.io/badge/tests-22%20passed-success)](https://vitest.dev)
+[![Tests](https://img.shields.io/badge/tests-53%20passed-success)](https://vitest.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue)](https://www.typescriptlang.org)
 [![WCAG 2.1 AA](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-purple)](#accessibility-wcag-21-aa)
 [![Gemini API](https://img.shields.io/badge/AI-Official%20Google%20GenAI%20SDK-orange)](https://ai.google.dev)
@@ -172,17 +172,28 @@ npm run dev
 - Client runs on: `http://localhost:5173`
 - Server API runs on: `http://localhost:5000`
 
-### 4. Run Unit & Integration Tests
+### 4. Run Unit, Integration & Component Tests
 ```bash
+# Run all unit, integration, route, injection, and component tests
 npm test
+
+# Generate comprehensive test coverage report across server and client
+npm run test:coverage
 ```
 Executes Vitest tests covering:
-- Budget initialisation, priority shifting, and proportional rebalancing.
-- Cycle detection (DFS), topological sorting, and critical path algorithms.
-- Deadline recomputation on date shift.
-- Quote Total Cost of Ownership (TCO) and missing field identification.
-- Zod schema validation of valid and malformed LLM responses.
-- Express API routes with mocked LLM calls.
+- **Server Routes & Validation:** `/api/ai/budget-tradeoffs`, `/date-shift-impact`, `/vendor-brief`, `/change-impact`, `/parse-profile`, and `/extract-quote` (valid 200 and invalid 400 cases).
+- **Prompt Injection Defense:** Strict untrusted-data delimiter isolation (`<<<UNTRUSTED_DATA>>>`) and escaping of nested user breakout tags.
+- **LLM Error Handling & Retry:** Single automatic retry on malformed JSON / schema drift and polite error messages on repeated failure.
+- **Deterministic Domain Math:** Budget initialization, priority shifting, 60fps proportional rebalancing, cycle detection (DFS), topological sorting, critical path (CPM), date shift diffs, and quote TCO calculations.
+- **Client Components & Accessibility:** `OnboardingWizard` (input validation & follow-up questions), `BudgetTab` (instant slider rebalancing & view toggles), `TimelineTab` (locked prerequisite states), and `AccessibleDonutChart` (HTML data table alternatives), verified with `axe-core`.
+
+#### Test Coverage Summary
+
+| Workspace | Test Focus | Tests Passed | % Stmts | % Funcs | Key Tested Modules / Components |
+|:---|:---|:---|:---|:---|:---|
+| **Server** (`@utsav/server`) | Routes, Injection Defense, Retry, Domain Logic | **38 / 38** | **78.07%** | **85.00%** | `aiRoutes`, `geminiService`, `injectionDefense`, `quoteLogic`, `budgetLogic`, `timelineLogic`, `schemas` |
+| **Client** (`@utsav/client`) | Components, Sliders, Views, axe-core A11y | **15 / 15** | **51.76%** | **26.59%** | `OnboardingWizard`, `BudgetTab`, `TimelineTab`, `AccessibleDonutChart`, `AccessibleBarChart`, `a11y` |
+| **Monorepo Total** | **Full Suite** | **53 / 53** | — | — | **12 Test Suites Passing (100% Green)** |
 
 ### 5. Production Build
 ```bash
