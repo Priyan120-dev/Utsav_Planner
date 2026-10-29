@@ -2,9 +2,9 @@
 > **GenAI-Powered Indian Celebration & Event Planning Orchestrator**  
 > Architected for Weddings, Milestone Birthdays, Anniversaries, and Community Festivals.
 
-[![Tests](https://img.shields.io/badge/tests-53%20passed-success)](https://vitest.dev)
+[![Tests](https://img.shields.io/badge/tests-107%20passed-success)](https://vitest.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Strict%20Mode-blue)](https://www.typescriptlang.org)
-[![WCAG 2.1 AA](https://img.shields.io/badge/Accessibility-WCAG%202.1%20AA-purple)](#accessibility-wcag-21-aa)
+[![WCAG 2.1 AA](https://img.shields.io/badge/Accessibility-targets%20WCAG%202.1%20AA-purple)](#-accessibility-targets-wcag-21-aa-verified-with-axe-core-automated-tests)
 [![Gemini API](https://img.shields.io/badge/AI-Official%20Google%20GenAI%20SDK-orange)](https://ai.google.dev)
 
 ---
@@ -26,7 +26,7 @@ Utsav Planner couples **deterministic, strictly tested TypeScript arithmetic and
 ```mermaid
 graph TD
     subgraph Client ["React + Vite + TypeScript (Client)"]
-        UI["Accessible Celebratory UI<br>(WCAG 2.1 AA, Tailored Indian Palette)"]
+        UI["Accessible Celebratory UI<br>(targets WCAG 2.1 AA, Tailored Indian Palette)"]
         Store["Single Source of Truth: EventState<br>(React Context + LocalStorage + Undo Stack)"]
         Debounce["useDebounce Hook<br>(60fps local slider updates)"]
         DualView["Accessible Donut & Bar Charts<br>Dual Screen-Reader Data Table Alternative"]
@@ -119,8 +119,9 @@ The model instructions strictly forbid executing any instructions contained with
 
 ---
 
-## ♿ Accessibility (WCAG 2.1 AA)
+## ♿ Accessibility (targets WCAG 2.1 AA, verified with axe-core automated tests)
 
+Utsav Planner targets WCAG 2.1 AA, verified with axe-core automated tests:
 - **Skip to Content:** Keyboard accessible skip link (`<a href="#main-content" className="skip-link">`) for screen reader and keyboard navigation.
 - **Dual Visual/Table Alternative:** Both donut and bar charts include an accessible toggle button rendering a full semantic HTML table (`<table>`, `<caption>`, `<thead>`, `<tbody>`, `<tfoot>`) with full column scopes.
 - **Contrast Ratios:** Curated Indian celebratory palette tested to guarantee color contrast ratios &ge; 4.5:1.
@@ -191,9 +192,9 @@ Executes Vitest tests covering:
 
 | Workspace | Test Focus | Tests Passed | % Stmts | % Funcs | Key Tested Modules / Components |
 |:---|:---|:---|:---|:---|:---|
-| **Server** (`@utsav/server`) | Routes, Injection Defense, Retry, Domain Logic | **38 / 38** | **78.07%** | **85.00%** | `aiRoutes`, `geminiService`, `injectionDefense`, `quoteLogic`, `budgetLogic`, `timelineLogic`, `schemas` |
-| **Client** (`@utsav/client`) | Components, Sliders, Views, axe-core A11y | **15 / 15** | **51.76%** | **26.59%** | `OnboardingWizard`, `BudgetTab`, `TimelineTab`, `AccessibleDonutChart`, `AccessibleBarChart`, `a11y` |
-| **Monorepo Total** | **Full Suite** | **53 / 53** | — | — | **12 Test Suites Passing (100% Green)** |
+| **Server** (`@utsav/server`) | Routes, Injection Defense, Retry, Domain Logic | **43 / 43** | **78.10%** | **85.00%** | `aiRoutes`, `geminiService`, `injectionDefense`, `quoteLogic`, `budgetLogic`, `timelineLogic`, `schemas` |
+| **Client** (`@utsav/client`) | Components, Sliders, Context, Views, axe-core A11y | **64 / 64** | **89.86%** | **63.06%** | `OnboardingWizard`, `BudgetTab`, `TimelineTab`, `VendorsTab`, `ChangesTab`, `EventContext`, `useDebounce`, `api`, `App`, `Header`, `AccessibleDonutChart`, `AccessibleBarChart`, `a11y` |
+| **Monorepo Total** | **Full Suite** | **107 / 107** | — | — | **20 Test Suites Passing (100% Green)** |
 
 ### 5. Production Build
 ```bash

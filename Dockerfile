@@ -49,4 +49,4 @@ COPY --from=builder /app/client/dist ./client/dist
 EXPOSE 5000
 
 # Start server
-CMD ["node", "server/dist/index.js"]
+CMD ["npm", "start"]

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { OnboardingWizard } from '../components/onboarding/OnboardingWizard.js';
-import { EventProvider } from '../context/EventContext.js';
+import { EventProvider, useEvent } from '../context/EventContext.js';
 import * as api from '../services/api.js';
 
 describe('OnboardingWizard Component', () => {
@@ -207,6 +207,78 @@ describe('OnboardingWizard Component', () => {
 
     const accessInput = screen.getByDisplayValue(/Wheelchair Ramps/i);
     expect(accessInput).toBeInTheDocument();
+  });
+
+  it('allows completing the step-by-step guided wizard and toggling priorities', async () => {
+    vi.spyOn(api, 'generateTimelineTasks').mockResolvedValueOnce({ tasks: [], hasCycles: false });
+
+    const Consumer = () => {
+      const { eventState } = useEvent();
+      return (
+        <div>
+          <OnboardingWizard />
+          {eventState && <div data-testid="initialized-title">{eventState.profile.title}</div>}
+        </div>
+      );
+    };
+
+    render(
+      <EventProvider>
+        <Consumer />
+      </EventProvider>
+    );
+
+    // Switch to step-by-step guided wizard
+    const guidedWizardBtn = screen.getByRole('button', { name: /Step-by-Step Guided Wizard/i });
+    fireEvent.click(guidedWizardBtn);
+
+    // Step 1: Occasion & Scale
+    expect(screen.getByText('Select Occasion Type:')).toBeInTheDocument();
+    const nextToStep2Btn = screen.getByRole('button', { name: /Next: Date & Location/i });
+    fireEvent.click(nextToStep2Btn);
+
+    // Step 2: Date & Location
+    expect(screen.getByText(/Ambiance & Aesthetic Theme:/i)).toBeInTheDocument();
+    const nextToStep3Btn = screen.getByRole('button', { name: /Next: Traditions & Priorities/i });
+    fireEvent.click(nextToStep3Btn);
+
+    // Step 3: Traditions & Priorities
+    expect(screen.getByText(/Pick Your Top 3 Priorities/i)).toBeInTheDocument();
+
+    // Toggle priority
+    const priorityBtn = screen.getByRole('button', { name: /Music, DJ & Entertainment/i });
+    fireEvent.click(priorityBtn);
+
+    // Complete wizard
+    const finishBtn = screen.getByRole('button', { name: /Generate Orchestrated Plan/i });
+    fireEvent.click(finishBtn);
+
+    expect(await screen.findByTestId('initialized-title')).toHaveTextContent('Our Royal Family Celebration');
+  });
+
+  it('allows loading pre-filled royal wedding demo directly from free-text tab', async () => {
+    vi.spyOn(api, 'generateTimelineTasks').mockResolvedValueOnce({ tasks: [], hasCycles: false });
+
+    const Consumer = () => {
+      const { eventState } = useEvent();
+      return (
+        <div>
+          <OnboardingWizard />
+          {eventState && <div data-testid="demo-title">{eventState.profile.title}</div>}
+        </div>
+      );
+    };
+
+    render(
+      <EventProvider>
+        <Consumer />
+      </EventProvider>
+    );
+
+    const demoBtn = screen.getByRole('button', { name: /Or load pre-filled Royal Wedding Demo/i });
+    fireEvent.click(demoBtn);
+
+    expect(await screen.findByTestId('demo-title')).toHaveTextContent(/Ananya & Rohit's Royal Palace Wedding/i);
   });
 });
 
