@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import { requestCache, MemoryCache } from '../cache.js';
 import { SYSTEM_PROMPT_V1 } from '../prompts/systemPrompt.js';
+import { logger } from '../logger.js';
 
 let genAIClient: GoogleGenAI | null = null;
 
@@ -207,9 +208,9 @@ export async function generateStructuredContent<T>(
       parsedJson = JSON.parse(cleaned);
     } catch (parseErr: unknown) {
       const parseErrMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
-      console.error('[Gemini Error Invalid JSON] Model output was not valid JSON (attempt 1):');
-      console.error('Raw model response:', lastRawText);
-      console.error('JSON parse error:', parseErrMsg);
+      logger.error('[Gemini Error Invalid JSON] Model output was not valid JSON (attempt 1):');
+      logger.error('Raw model response:', lastRawText);
+      logger.error('JSON parse error:', parseErrMsg);
       retryNeeded = true;
     }
 
@@ -221,16 +222,16 @@ export async function generateStructuredContent<T>(
       }
 
       // Schema validation failed on first attempt
-      console.error(
+      logger.error(
         '[Gemini Error Schema Validation] Model output failed Zod validation (attempt 1):'
       );
-      console.error('Raw model response:', lastRawText);
-      console.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
+      logger.error('Raw model response:', lastRawText);
+      logger.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
       retryNeeded = true;
     }
   } catch (err: unknown) {
     const classified = classifyGeminiError(err, modelName);
-    console.error(classified.serverLog);
+    logger.error(classified.serverLog);
 
     if (!classified.canRetry) {
       // 404, 429, 401/403, unknown: do not retry!
@@ -246,7 +247,7 @@ export async function generateStructuredContent<T>(
   }
 
   // 3. Retry ONCE (only for invalid JSON or timeout)
-  console.log('Retrying Gemini generation with error correction prompt...');
+  logger.info('Retrying Gemini generation with error correction prompt...');
   try {
     const retryPrompt = `${prompt}
 
@@ -271,9 +272,9 @@ Please regenerate the response adhering strictly to the schema rules. Output ONL
       parsedJson = JSON.parse(cleaned);
     } catch (parseErr: unknown) {
       const parseErrMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
-      console.error('[Gemini Error Invalid JSON] Model output was not valid JSON after retry:');
-      console.error('Raw model response:', retryRawText);
-      console.error('JSON parse error:', parseErrMsg);
+      logger.error('[Gemini Error Invalid JSON] Model output was not valid JSON after retry:');
+      logger.error('Raw model response:', retryRawText);
+      logger.error('JSON parse error:', parseErrMsg);
       throw new Error(
         'The AI assistant was unable to format its response correctly. Please try again or refine your input.'
       );
@@ -285,11 +286,11 @@ Please regenerate the response adhering strictly to the schema rules. Output ONL
       return validated.data;
     }
 
-    console.error(
+    logger.error(
       '[Gemini Error Schema Validation] Model output failed Zod validation after retry:'
     );
-    console.error('Raw model response:', retryRawText);
-    console.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
+    logger.error('Raw model response:', retryRawText);
+    logger.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
     throw new Error(
       'The AI assistant was unable to format its response correctly. Please try again or refine your input.'
     );
@@ -304,7 +305,7 @@ Please regenerate the response adhering strictly to the schema rules. Output ONL
     ) {
       throw error;
     }
-    console.error(classified.serverLog);
+    logger.error(classified.serverLog);
     throw new Error(classified.clientMessage);
   }
 }

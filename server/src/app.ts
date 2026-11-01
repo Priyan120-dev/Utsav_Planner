@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { healthRouter } from './routes/healthRoutes.js';
 import { aiRouter } from './routes/aiRoutes.js';
+import { logger } from './logger.js';
 
 export const app = express();
 
@@ -28,7 +29,7 @@ if (
   !clientDistExists &&
   (config.NODE_ENV === 'production' || process.env.NODE_ENV === 'production')
 ) {
-  console.warn(`[SERVER WARN] Production client build not found at runtime: ${clientDistPath}`);
+  logger.warn(`[SERVER WARN] Production client build not found at runtime: ${clientDistPath}`);
 }
 
 // Security Headers with Helmet CSP
@@ -155,9 +156,13 @@ app.use((_req: Request, res: Response) => {
 
 // Centralized Error Handler (no secrets leaked)
 app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[SERVER ERROR]:', err?.message || err);
   const status = typeof err?.status === 'number' ? err.status : 500;
+  logger.error('[SERVER ERROR]:', err?.message || err);
+  const errorMessage =
+    status >= 500
+      ? 'An unexpected internal error occurred. Please try again.'
+      : err?.message || 'Bad request';
   res.status(status).json({
-    error: err?.message || 'An unexpected internal error occurred. Please try again.'
+    error: errorMessage
   });
 });

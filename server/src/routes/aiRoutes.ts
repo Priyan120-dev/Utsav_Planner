@@ -26,6 +26,7 @@ import { buildDateShiftImpactPrompt } from '../prompts/dateShiftImpact.js';
 import { buildVendorBriefPrompt } from '../prompts/vendorBrief.js';
 import { buildQuoteExtractorPrompt } from '../prompts/quoteExtractor.js';
 import { buildChangeImpactPrompt } from '../prompts/changeImpact.js';
+import { logger } from '../logger.js';
 
 export const aiRouter = Router();
 
@@ -60,7 +61,7 @@ aiRouter.post('/parse-profile', async (req: Request, res: Response): Promise<voi
   } catch (error: unknown) {
     const message =
       (error instanceof Error && error.message) || 'Failed to parse celebration profile';
-    console.error('Error in /parse-profile:', message);
+    logger.error('Error in /parse-profile:', message);
     res.status(500).json({ error: message });
   }
 });
@@ -100,7 +101,7 @@ aiRouter.post('/budget-tradeoffs', async (req: Request, res: Response): Promise<
   } catch (error: unknown) {
     const message =
       (error instanceof Error && error.message) || 'Failed to evaluate budget trade-off';
-    console.error('Error in /budget-tradeoffs:', message);
+    logger.error('Error in /budget-tradeoffs:', message);
     res.status(500).json({ error: message });
   }
 });
@@ -152,7 +153,7 @@ aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<vo
   } catch (error: unknown) {
     const message =
       (error instanceof Error && error.message) || 'Failed to generate timeline tasks';
-    console.error('Error in /generate-tasks:', message);
+    logger.error('Error in /generate-tasks:', message);
     res.status(500).json({ error: message });
   }
 });
@@ -221,7 +222,7 @@ aiRouter.post('/date-shift-impact', async (req: Request, res: Response): Promise
   } catch (error: unknown) {
     const message =
       (error instanceof Error && error.message) || 'Failed to evaluate date shift impact';
-    console.error('Error in /date-shift-impact:', message);
+    logger.error('Error in /date-shift-impact:', message);
     res.status(500).json({ error: message });
   }
 });
@@ -263,7 +264,7 @@ aiRouter.post('/vendor-brief', async (req: Request, res: Response): Promise<void
   } catch (error: unknown) {
     const message =
       (error instanceof Error && error.message) || 'Failed to generate vendor requirements brief';
-    console.error('Error in /vendor-brief:', message);
+    logger.error('Error in /vendor-brief:', message);
     res.status(500).json({ error: message });
   }
 });
@@ -303,7 +304,7 @@ aiRouter.post('/extract-quote', async (req: Request, res: Response): Promise<voi
     res.json(normalizedQuote);
   } catch (error: unknown) {
     const message = (error instanceof Error && error.message) || 'Failed to extract vendor quote';
-    console.error('Error in /extract-quote:', message);
+    logger.error('Error in /extract-quote:', message);
     res.status(500).json({ error: message });
   }
 });
@@ -378,7 +379,7 @@ aiRouter.post('/change-impact', async (req: Request, res: Response): Promise<voi
     });
   } catch (error: unknown) {
     const message = (error instanceof Error && error.message) || 'Failed to analyze change impact';
-    console.error('Error in /change-impact:', message);
+    logger.error('Error in /change-impact:', message);
     res.status(500).json({ error: message });
   }
 });
