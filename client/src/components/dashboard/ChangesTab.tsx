@@ -1,18 +1,11 @@
 import React, { useState } from 'react';
 import { useEvent } from '../../context/EventContext.js';
 import * as api from '../../services/api.js';
-import {
-  History,
-  RotateCcw,
-  AlertTriangle,
-  Sparkles,
-  Check,
-  Calendar,
-  Users,
-  IndianRupee
-} from 'lucide-react';
+import { RotateCcw, AlertTriangle, Sparkles, Calendar, Users, IndianRupee } from 'lucide-react';
 import { LoadingSkeleton } from '../common/LoadingSkeleton.js';
 import { ErrorAlert } from '../common/ErrorAlert.js';
+import { ChangeEvaluationPreview } from './changes/ChangeEvaluationPreview.js';
+import { ChangeLogList } from './changes/ChangeLogList.js';
 
 interface ChangesTabProps {
   isOpenModal?: boolean;
@@ -259,131 +252,17 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
 
         {/* Evaluation Diff & Confirmation */}
         {evaluationResult && (
-          <div className="mt-4 p-5 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-300 space-y-4">
-            <h4 className="text-sm font-bold text-amber-950 flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-600" />
-              <span>Impact Diff Preview (Review Before Confirming)</span>
-            </h4>
-
-            {/* Before/After Diff */}
-            <div className="grid grid-cols-2 gap-4 bg-white p-3.5 rounded-xl border border-amber-200 text-xs">
-              <div>
-                <span className="font-semibold text-utsav-cream-800 block mb-0.5">
-                  Previous Value:
-                </span>
-                <span className="text-sm font-bold text-red-700">
-                  {changeType === 'budget'
-                    ? `₹${Number(evaluationResult.oldValue).toLocaleString('en-IN')}`
-                    : String(evaluationResult.oldValue)}
-                </span>
-              </div>
-              <div>
-                <span className="font-semibold text-utsav-cream-800 block mb-0.5">
-                  New Target Value:
-                </span>
-                <span className="text-sm font-bold text-emerald-700">
-                  {changeType === 'budget'
-                    ? `₹${Number(evaluationResult.newValue).toLocaleString('en-IN')}`
-                    : String(evaluationResult.newValue)}
-                </span>
-              </div>
-            </div>
-
-            {/* AI Strategic Advice */}
-            <div className="space-y-2 text-xs text-amber-950">
-              <div className="leading-relaxed">
-                <strong>Executive Summary:</strong> {evaluationResult.advice?.impactSummary}
-              </div>
-              <div className="leading-relaxed">
-                <strong>Budget Guidance:</strong> {evaluationResult.advice?.budgetAdvice}
-              </div>
-              <div className="leading-relaxed">
-                <strong>Vendor Negotiation Advice:</strong> {evaluationResult.advice?.vendorAdvice}
-              </div>
-            </div>
-
-            {/* Action Items */}
-            {evaluationResult.advice?.suggestedActionItems?.length > 0 && (
-              <div className="pt-2">
-                <span className="text-[11px] font-bold text-amber-950 uppercase tracking-wider block mb-1">
-                  Immediate Checklist Items:
-                </span>
-                <ul className="list-disc list-inside space-y-1 text-xs text-amber-900">
-                  {evaluationResult.advice.suggestedActionItems.map((item: string, i: number) => (
-                    <li key={i}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setEvaluationResult(null)}
-                className="px-4 py-2 text-xs font-medium text-amber-900 hover:bg-amber-100 rounded-xl cursor-pointer"
-              >
-                Discard
-              </button>
-              <button
-                type="button"
-                onClick={handleCommitChange}
-                className="px-5 py-2 text-xs font-semibold rounded-xl bg-emerald-700 text-white hover:bg-emerald-800 transition-all cursor-pointer shadow-xs"
-              >
-                Confirm & Commit Change to Plan
-              </button>
-            </div>
-          </div>
+          <ChangeEvaluationPreview
+            evaluationResult={evaluationResult}
+            changeType={changeType}
+            onDiscard={() => setEvaluationResult(null)}
+            onCommit={handleCommitChange}
+          />
         )}
       </div>
 
       {/* Section 2: Audit History Log */}
-      <div className="bg-white rounded-2xl p-6 border border-utsav-cream-200 shadow-xs space-y-4">
-        <h3 className="text-sm font-bold text-utsav-cream-900 flex items-center gap-2">
-          <History className="w-4 h-4 text-utsav-saffron-600" />
-          <span>ChangeLog Audit Trail ({changeLog.length} events)</span>
-        </h3>
-
-        <div className="space-y-3">
-          {changeLog.map((entry, index) => (
-            <div
-              key={entry.id}
-              className="p-3.5 rounded-xl border border-utsav-cream-200 bg-utsav-cream-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-            >
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-utsav-cream-900 capitalize">
-                    {entry.fieldChanged === 'custom'
-                      ? 'Plan Event'
-                      : `Changed ${entry.fieldChanged}`}
-                  </span>
-                  <span className="text-[10px] text-utsav-cream-800">
-                    {new Date(entry.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}{' '}
-                    &bull; {new Date(entry.timestamp).toLocaleDateString()}
-                  </span>
-                </div>
-                <p className="text-utsav-cream-800">{entry.impactSummary}</p>
-                <span className="text-[11px] text-utsav-cream-800 italic block">
-                  Reason: {entry.reason}
-                </span>
-              </div>
-
-              {index === 0 && changeLog.length > 1 && (
-                <button
-                  type="button"
-                  onClick={undoLastChange}
-                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-lg bg-white border border-amber-300 text-amber-900 hover:bg-amber-50 cursor-pointer flex-shrink-0"
-                >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Undo</span>
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
+      <ChangeLogList changeLog={changeLog} onUndoLastChange={undoLastChange} />
     </div>
   );
 };
