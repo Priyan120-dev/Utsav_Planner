@@ -30,7 +30,9 @@ describe('AccessibleBarChart Component', () => {
     // Table container and elements must now exist in the DOM
     const table = screen.getByRole('table');
     expect(table).toBeInTheDocument();
-    expect(screen.getByText('Detailed event budget allocation breakdown by category')).toBeInTheDocument();
+    expect(
+      screen.getByText('Detailed event budget allocation breakdown by category')
+    ).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Category/i })).toBeInTheDocument();
 
     // Toggle back to chart

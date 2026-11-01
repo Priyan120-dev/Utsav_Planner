@@ -36,7 +36,9 @@ describe('EventContext and Actions', () => {
   it('throws an error if useEvent is used outside EventProvider', () => {
     // Suppress React error boundary console log for expected throw
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-    expect(() => renderHook(() => useEvent())).toThrow('useEvent must be used within an EventProvider');
+    expect(() => renderHook(() => useEvent())).toThrow(
+      'useEvent must be used within an EventProvider'
+    );
     consoleError.mockRestore();
   });
 
@@ -96,7 +98,10 @@ describe('EventContext and Actions', () => {
 
     await act(async () => {
       try {
-        await result.current.initializeEvent({ ...mockProfile, totalBudgetINR: -1 } as any);
+        await result.current.initializeEvent({
+          ...mockProfile,
+          totalBudgetINR: -1
+        } as unknown as EventProfile);
       } catch {
         // Handled internally in hook
       }
@@ -136,7 +141,9 @@ describe('EventContext and Actions', () => {
       await result.current.updateSliderPercentage('catering', 45);
     });
     expect(adviceSpy).toHaveBeenCalled();
-    expect(result.current.eventState?.budget.lastAiTradeoff?.explanation).toBe('Increased catering proportion');
+    expect(result.current.eventState?.budget.lastAiTradeoff?.explanation).toBe(
+      'Increased catering proportion'
+    );
   });
 
   it('toggles task status and re-evaluates dependencies', async () => {
@@ -172,27 +179,39 @@ describe('EventContext and Actions', () => {
       await result.current.initializeEvent(mockProfile);
     });
 
-    expect(result.current.eventState?.timeline.tasks.find(t => t.id === 'task-v')?.status).toBe('ready');
-    expect(result.current.eventState?.timeline.tasks.find(t => t.id === 'task-c')?.status).toBe('locked');
+    expect(result.current.eventState?.timeline.tasks.find((t) => t.id === 'task-v')?.status).toBe(
+      'ready'
+    );
+    expect(result.current.eventState?.timeline.tasks.find((t) => t.id === 'task-c')?.status).toBe(
+      'locked'
+    );
 
     // Advance task-v to in_progress
     act(() => {
       result.current.toggleTaskStatus('task-v');
     });
-    expect(result.current.eventState?.timeline.tasks.find(t => t.id === 'task-v')?.status).toBe('in_progress');
+    expect(result.current.eventState?.timeline.tasks.find((t) => t.id === 'task-v')?.status).toBe(
+      'in_progress'
+    );
 
     // Advance task-v to done -> should unlock task-c!
     act(() => {
       result.current.toggleTaskStatus('task-v');
     });
-    expect(result.current.eventState?.timeline.tasks.find(t => t.id === 'task-v')?.status).toBe('done');
-    expect(result.current.eventState?.timeline.tasks.find(t => t.id === 'task-c')?.status).toBe('ready');
+    expect(result.current.eventState?.timeline.tasks.find((t) => t.id === 'task-v')?.status).toBe(
+      'done'
+    );
+    expect(result.current.eventState?.timeline.tasks.find((t) => t.id === 'task-c')?.status).toBe(
+      'ready'
+    );
 
     // Advance task-v from done wraps back to ready
     act(() => {
       result.current.toggleTaskStatus('task-v');
     });
-    expect(result.current.eventState?.timeline.tasks.find(t => t.id === 'task-v')?.status).toBe('ready');
+    expect(result.current.eventState?.timeline.tasks.find((t) => t.id === 'task-v')?.status).toBe(
+      'ready'
+    );
   });
 
   it('saves vendor brief and quotes into state', async () => {
@@ -256,21 +275,36 @@ describe('EventContext and Actions', () => {
 
     // 1. Commit guest change
     act(() => {
-      result.current.commitDynamicChange('guests', 200, 'More relatives invited', 'Recalculated per-head spend');
+      result.current.commitDynamicChange(
+        'guests',
+        200,
+        'More relatives invited',
+        'Recalculated per-head spend'
+      );
     });
     expect(result.current.eventState?.profile.expectedGuests).toBe(200);
     expect(result.current.eventState?.changeLog).toHaveLength(2);
 
     // 2. Commit budget change
     act(() => {
-      result.current.commitDynamicChange('budget', 2000000, 'Family contributed more', 'Expanded allocations');
+      result.current.commitDynamicChange(
+        'budget',
+        2000000,
+        'Family contributed more',
+        'Expanded allocations'
+      );
     });
     expect(result.current.eventState?.profile.totalBudgetINR).toBe(2000000);
     expect(result.current.eventState?.changeLog).toHaveLength(3);
 
     // 3. Commit date change
     act(() => {
-      result.current.commitDynamicChange('date', '2026-11-25', 'Auspicious date shifted', 'Compressed timelines');
+      result.current.commitDynamicChange(
+        'date',
+        '2026-11-25',
+        'Auspicious date shifted',
+        'Compressed timelines'
+      );
     });
     expect(result.current.eventState?.profile.eventDate).toBe('2026-11-25');
     expect(result.current.eventState?.changeLog).toHaveLength(4);
@@ -307,7 +341,9 @@ describe('EventContext and Actions', () => {
     });
 
     expect(result.current.eventState).not.toBeNull();
-    expect(result.current.eventState?.profile.title).toContain("Ananya & Rohit's Royal Palace Wedding");
+    expect(result.current.eventState?.profile.title).toContain(
+      "Ananya & Rohit's Royal Palace Wedding"
+    );
 
     // Reset event
     act(() => {

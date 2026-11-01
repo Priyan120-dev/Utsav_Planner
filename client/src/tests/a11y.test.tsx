@@ -10,7 +10,12 @@ import { ChangesTab } from '../components/dashboard/ChangesTab.js';
 import { EventProvider } from '../context/EventContext.js';
 import { App } from '../App.js';
 
-const mockBudget = initializeBudgetState(2500000, 'wedding', ['Catering', 'Decor', 'Photography'], 250);
+const mockBudget = initializeBudgetState(
+  2500000,
+  'wedding',
+  ['Catering', 'Decor', 'Photography'],
+  250
+);
 
 const mockEventState: EventState = {
   version: 1,
@@ -71,7 +76,7 @@ async function testA11y(element: React.ReactElement) {
   } else {
     document.body.innerHTML = `<main id="test-main">${html}</main>`;
   }
-  
+
   const results = await axe.run(document.body, {
     rules: {
       // Color-contrast in jsdom lacks computed CSS stylesheets, so we disable only contrast in headless JSDOM
@@ -89,7 +94,9 @@ describe('Accessibility (axe-core) Verification', () => {
   });
 
   it('AccessibleDonutChart data table alternative has zero accessibility violations', async () => {
-    const violations = await testA11y(<AccessibleDonutChart budget={mockBudget} forcedView="table" />);
+    const violations = await testA11y(
+      <AccessibleDonutChart budget={mockBudget} forcedView="table" />
+    );
     expect(violations).toEqual([]);
   });
 
@@ -99,7 +106,9 @@ describe('Accessibility (axe-core) Verification', () => {
   });
 
   it('AccessibleBarChart data table alternative has zero accessibility violations', async () => {
-    const violations = await testA11y(<AccessibleBarChart budget={mockBudget} forcedView="table" />);
+    const violations = await testA11y(
+      <AccessibleBarChart budget={mockBudget} forcedView="table" />
+    );
     expect(violations).toEqual([]);
   });
 

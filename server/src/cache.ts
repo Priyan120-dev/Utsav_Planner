@@ -6,7 +6,7 @@ interface CacheEntry<T> {
 }
 
 export class MemoryCache {
-  private store = new Map<string, CacheEntry<any>>();
+  private store = new Map<string, CacheEntry<unknown>>();
   private maxItems: number;
   private defaultTtlMs: number;
   private cleanupTimer: NodeJS.Timeout | null = null;

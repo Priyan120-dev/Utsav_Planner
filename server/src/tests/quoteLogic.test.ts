@@ -76,7 +76,12 @@ describe('Quote Pure Logic', () => {
       expect(cost1.totalCostINR).toBe(96000);
 
       // 200 guests -> falls in upToGuests: 250 slab (1000/plate)
-      const cost2 = calculateQuoteTCO(20000, [{ item: 'Service Tax', amountINR: 5000 }], tiers, 200);
+      const cost2 = calculateQuoteTCO(
+        20000,
+        [{ item: 'Service Tax', amountINR: 5000 }],
+        tiers,
+        200
+      );
       expect(cost2.tieredCostINR).toBe(200 * 1000); // 200,000
       expect(cost2.totalAdditionalChargesINR).toBe(5000);
       expect(cost2.totalCostINR).toBe(225000); // 20000 + 200000 + 5000

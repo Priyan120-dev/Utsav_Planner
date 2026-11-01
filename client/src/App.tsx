@@ -12,7 +12,9 @@ import { LayoutDashboard, Wallet, CalendarClock, Store, GitCompare, X } from 'lu
 
 export const App: React.FC = () => {
   const { eventState, error, clearError, announcement } = useEvent();
-  const [activeTab, setActiveTab] = useState<'overview' | 'budget' | 'timeline' | 'vendors' | 'changes'>('overview');
+  const [activeTab, setActiveTab] = useState<
+    'overview' | 'budget' | 'timeline' | 'vendors' | 'changes'
+  >('overview');
   const [isSomethingChangedModalOpen, setIsSomethingChangedModalOpen] = useState<boolean>(false);
 
   const tabs = [
@@ -48,12 +50,7 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-utsav-cream-50 flex flex-col font-sans">
       {/* Visually hidden Live Announcer Region for screen readers */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {announcement}
       </div>
 
@@ -61,7 +58,10 @@ export const App: React.FC = () => {
       <Header onOpenSomethingChanged={() => setIsSomethingChangedModalOpen(true)} />
 
       {/* Main Content Area */}
-      <main id="main-content" className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main
+        id="main-content"
+        className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6"
+      >
         {/* Error notification banner */}
         {error && <ErrorAlert message={error} onDismiss={clearError} />}
 
@@ -92,7 +92,7 @@ export const App: React.FC = () => {
                       aria-controls={`panel-${tab.id}`}
                       tabIndex={isActive ? 0 : -1}
                       onClick={() => setActiveTab(tab.id)}
-                      onKeyDown={e => handleTabKeyDown(e, index)}
+                      onKeyDown={(e) => handleTabKeyDown(e, index)}
                       className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-utsav-saffron-500 focus:ring-offset-1 ${
                         isActive
                           ? 'bg-utsav-saffron-600 text-white shadow-2xs'
@@ -140,7 +140,10 @@ export const App: React.FC = () => {
         >
           <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 sm:p-8 shadow-2xl relative">
             <div className="flex items-center justify-between pb-4 border-b border-utsav-cream-200 mb-6">
-              <h2 id="modal-change-title" className="text-lg font-bold text-utsav-cream-900 font-display">
+              <h2
+                id="modal-change-title"
+                className="text-lg font-bold text-utsav-cream-900 font-display"
+              >
                 Something Changed Mid-Planning
               </h2>
               <button
@@ -170,9 +173,7 @@ export const App: React.FC = () => {
             <span>&bull;</span>
             <span>GenAI Indian Celebration & Event Planning Assistant</span>
           </div>
-          <div>
-            Built with pure deterministic domain logic & Gemini API structured output
-          </div>
+          <div>Built with pure deterministic domain logic & Gemini API structured output</div>
         </div>
       </footer>
     </div>

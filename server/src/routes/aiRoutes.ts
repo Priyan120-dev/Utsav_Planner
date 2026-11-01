@@ -1,8 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { z } from 'zod';
-import { 
-  EventProfileSchema,
-  EventStateSchema,
+import {
   TaskItem,
   ParsedProfileAiResponseSchema,
   BudgetTradeoffAiResponseSchema,
@@ -15,8 +12,7 @@ import {
   evaluateTaskStatuses,
   shiftTimelineDate,
   createNormalizedQuote,
-  recalculateBudgetForParameters,
-  BudgetCategorySchema
+  recalculateBudgetForParameters
 } from '@utsav/shared';
 import { generateStructuredContent } from '../services/geminiService.js';
 import { buildProfileParserPrompt } from '../prompts/profileParser.js';
@@ -26,15 +22,20 @@ import { buildDateShiftImpactPrompt } from '../prompts/dateShiftImpact.js';
 import { buildVendorBriefPrompt } from '../prompts/vendorBrief.js';
 import { buildQuoteExtractorPrompt } from '../prompts/quoteExtractor.js';
 import { buildChangeImpactPrompt } from '../prompts/changeImpact.js';
+import { logger } from '../logger.js';
+import {
+  ParseProfileReqSchema,
+  BudgetTradeoffReqSchema,
+  GenerateTasksReqSchema,
+  DateShiftReqSchema,
+  VendorBriefReqSchema,
+  ExtractQuoteReqSchema,
+  DynamicChangeReqSchema
+} from './aiRouteSchemas.js';
 
 export const aiRouter = Router();
 
 // 1. Parse Profile from Free Text
-const ParseProfileReqSchema = z.object({
-  freeText: z.string().min(5, 'Description must be at least 5 characters').max(5000, 'Description cannot exceed 5000 characters'),
-  existingProfile: z.record(z.unknown()).optional()
-});
-
 aiRouter.post('/parse-profile', async (req: Request, res: Response): Promise<void> => {
   try {
     const parseResult = ParseProfileReqSchema.safeParse(req.body);
@@ -54,19 +55,15 @@ aiRouter.post('/parse-profile', async (req: Request, res: Response): Promise<voi
     });
 
     res.json(parsedData);
-  } catch (error: any) {
-    console.error('Error in /parse-profile:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to parse celebration profile' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to parse celebration profile';
+    logger.error('Error in /parse-profile:', message);
+    res.status(500).json({ error: message });
   }
 });
 
 // 2. Budget Trade-offs
-const BudgetTradeoffReqSchema = z.object({
-  eventState: EventStateSchema,
-  categoryAdjusted: BudgetCategorySchema,
-  newPercentage: z.number().min(0).max(100)
-});
-
 aiRouter.post('/budget-tradeoffs', async (req: Request, res: Response): Promise<void> => {
   try {
     const parseResult = BudgetTradeoffReqSchema.safeParse(req.body);
@@ -92,17 +89,15 @@ aiRouter.post('/budget-tradeoffs', async (req: Request, res: Response): Promise<
     });
 
     res.json(tradeoffData);
-  } catch (error: any) {
-    console.error('Error in /budget-tradeoffs:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to evaluate budget trade-off' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to evaluate budget trade-off';
+    logger.error('Error in /budget-tradeoffs:', message);
+    res.status(500).json({ error: message });
   }
 });
 
 // 3. Generate Sequenced Tasks
-const GenerateTasksReqSchema = z.object({
-  eventProfile: EventProfileSchema
-});
-
 aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<void> => {
   try {
     const parseResult = GenerateTasksReqSchema.safeParse(req.body);
@@ -126,7 +121,7 @@ aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<vo
     });
 
     // Code validation: check DAG for cycles
-    const rawTasks: TaskItem[] = generated.tasks.map(t => ({
+    const rawTasks: TaskItem[] = generated.tasks.map((t) => ({
       ...t,
       dependsOn: t.dependsOn || [],
       status: 'locked' as const,
@@ -142,18 +137,15 @@ aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<vo
       tasks: evaluatedTasks,
       hasCycles
     });
-  } catch (error: any) {
-    console.error('Error in /generate-tasks:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to generate timeline tasks' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to generate timeline tasks';
+    logger.error('Error in /generate-tasks:', message);
+    res.status(500).json({ error: message });
   }
 });
 
 // 4. Date Shift Impact Analysis
-const DateShiftReqSchema = z.object({
-  eventState: EventStateSchema,
-  newEventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
-});
-
 aiRouter.post('/date-shift-impact', async (req: Request, res: Response): Promise<void> => {
   try {
     const parseResult = DateShiftReqSchema.safeParse(req.body);
@@ -171,8 +163,8 @@ aiRouter.post('/date-shift-impact', async (req: Request, res: Response): Promise
     );
 
     const unrealisticTitles = updatedTimeline.tasks
-      .filter(t => unrealisticTaskIds.includes(t.id))
-      .map(t => t.title);
+      .filter((t) => unrealisticTaskIds.includes(t.id))
+      .map((t) => t.title);
 
     // 2. Ask LLM for compression advice and suggested drops
     const prompt = buildDateShiftImpactPrompt(
@@ -209,19 +201,15 @@ aiRouter.post('/date-shift-impact', async (req: Request, res: Response): Promise
       daysShifted,
       advice
     });
-  } catch (error: any) {
-    console.error('Error in /date-shift-impact:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to evaluate date shift impact' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to evaluate date shift impact';
+    logger.error('Error in /date-shift-impact:', message);
+    res.status(500).json({ error: message });
   }
 });
 
 // 5. Vendor Brief & Negotiation Questions
-const VendorBriefReqSchema = z.object({
-  eventProfile: EventProfileSchema,
-  category: BudgetCategorySchema,
-  allocatedBudgetINR: z.number().nonnegative()
-});
-
 aiRouter.post('/vendor-brief', async (req: Request, res: Response): Promise<void> => {
   try {
     const parseResult = VendorBriefReqSchema.safeParse(req.body);
@@ -249,19 +237,15 @@ aiRouter.post('/vendor-brief', async (req: Request, res: Response): Promise<void
       category,
       ...briefData
     });
-  } catch (error: any) {
-    console.error('Error in /vendor-brief:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to generate vendor requirements brief' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to generate vendor requirements brief';
+    logger.error('Error in /vendor-brief:', message);
+    res.status(500).json({ error: message });
   }
 });
 
 // 6. Extract Structured Quote from Raw Text
-const ExtractQuoteReqSchema = z.object({
-  rawText: z.string().min(10, 'Vendor quote text is too short to analyze').max(10000, 'Vendor quote text cannot exceed 10000 characters'),
-  category: BudgetCategorySchema,
-  guestCount: z.number().int().positive().optional()
-});
-
 aiRouter.post('/extract-quote', async (req: Request, res: Response): Promise<void> => {
   try {
     const parseResult = ExtractQuoteReqSchema.safeParse(req.body);
@@ -285,20 +269,14 @@ aiRouter.post('/extract-quote', async (req: Request, res: Response): Promise<voi
     const normalizedQuote = createNormalizedQuote(extraction, category, guestCount);
 
     res.json(normalizedQuote);
-  } catch (error: any) {
-    console.error('Error in /extract-quote:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to extract vendor quote' });
+  } catch (error: unknown) {
+    const message = (error instanceof Error && error.message) || 'Failed to extract vendor quote';
+    logger.error('Error in /extract-quote:', message);
+    res.status(500).json({ error: message });
   }
 });
 
 // 7. Dynamic Change Impact Assessment
-const DynamicChangeReqSchema = z.object({
-  eventState: EventStateSchema,
-  changeType: z.enum(['budget', 'guests', 'date']),
-  newValue: z.union([z.string(), z.number()]),
-  reason: z.string().max(1000, 'Reason cannot exceed 1000 characters').optional()
-});
-
 aiRouter.post('/change-impact', async (req: Request, res: Response): Promise<void> => {
   try {
     const parseResult = DynamicChangeReqSchema.safeParse(req.body);
@@ -359,8 +337,9 @@ aiRouter.post('/change-impact', async (req: Request, res: Response): Promise<voi
       updatedTimeline,
       advice
     });
-  } catch (error: any) {
-    console.error('Error in /change-impact:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to analyze change impact' });
+  } catch (error: unknown) {
+    const message = (error instanceof Error && error.message) || 'Failed to analyze change impact';
+    logger.error('Error in /change-impact:', message);
+    res.status(500).json({ error: message });
   }
 });

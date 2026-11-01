@@ -1,16 +1,62 @@
 import {
   EventProfile,
   EventState,
+  BudgetState,
+  TimelineState,
   BudgetCategory,
   QuoteItem,
   TaskItem,
-  VendorBrief
+  VendorBrief,
+  ParsedProfileAiResponseSchema,
+  DateShiftAiResponseSchema,
+  DynamicChangeImpactAiResponseSchema
 } from '@utsav/shared';
+import { z } from 'zod';
+
+export type ParsedProfileResult = Partial<z.infer<typeof ParsedProfileAiResponseSchema>> & {
+  priorities?: [string, string, string];
+};
+
+export interface DateShiftImpactResult {
+  newEventDate?: string;
+  daysShifted: number;
+  recomputedDeadlines?: Array<{
+    id: string;
+    title: string;
+    oldDate?: string;
+    newDate: string;
+    status: string;
+  }>;
+  unrealisticTaskIds: string[];
+  updatedTimeline?: TimelineState;
+  advice: Partial<z.infer<typeof DateShiftAiResponseSchema>> & {
+    compressionAdvice?: string;
+    suggestedDrops: string[];
+  };
+}
+
+export interface DynamicChangeImpactResult {
+  changeType?: 'budget' | 'guests' | 'date';
+  oldValue: unknown;
+  newValue: string | number;
+  delta?: number;
+  updatedBudget?: BudgetState;
+  updatedTimeline?: TimelineState;
+  advice: Partial<z.infer<typeof DynamicChangeImpactAiResponseSchema>> & {
+    impactSummary?: string;
+    budgetAdvice?: string;
+    vendorAdvice?: string;
+    suggestedActionItems: string[];
+  };
+}
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 export class ApiError extends Error {
-  constructor(message: string, public status?: number) {
+  constructor(
+    message: string,
+    public status?: number
+  ) {
     super(message);
     this.name = 'ApiError';
   }
@@ -20,20 +66,20 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const res = await fetch(`${API_BASE}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...options.headers
     },
-    ...options,
+    ...options
   });
 
   if (!res.ok) {
-    let errorMsg = `Server error (${res.status})`;
+    let errMsg = `Server error (${res.status})`;
     try {
-      const data = await res.json();
-      errorMsg = data.error || errorMsg;
+      const body = await res.json();
+      if (body.error) errMsg = body.error;
     } catch {
-      // fallback
+      // Ignore JSON parse failure on non-200 responses
     }
-    throw new ApiError(errorMsg, res.status);
+    throw new ApiError(errMsg, res.status);
   }
 
   return res.json() as Promise<T>;
@@ -43,7 +89,7 @@ export async function parseProfileFromFreeText(
   freeText: string,
   existingProfile?: Partial<EventProfile>,
   signal?: AbortSignal
-): Promise<any> {
+): Promise<ParsedProfileResult> {
   return request('/ai/parse-profile', {
     method: 'POST',
     body: JSON.stringify({ freeText, existingProfile }),
@@ -56,7 +102,7 @@ export async function getBudgetTradeoffAdvice(
   categoryAdjusted: BudgetCategory,
   newPercentage: number,
   signal?: AbortSignal
-): Promise<{ explanation: string; actionableOptions: string[]; disclaimer: string }> {
+): Promise<NonNullable<EventState['budget']['lastAiTradeoff']>> {
   return request('/ai/budget-tradeoffs', {
     method: 'POST',
     body: JSON.stringify({ eventState, categoryAdjusted, newPercentage }),
@@ -79,7 +125,7 @@ export async function analyzeDateShiftImpact(
   eventState: EventState,
   newEventDate: string,
   signal?: AbortSignal
-): Promise<any> {
+): Promise<DateShiftImpactResult> {
   return request('/ai/date-shift-impact', {
     method: 'POST',
     body: JSON.stringify({ eventState, newEventDate }),
@@ -119,7 +165,7 @@ export async function assessDynamicChangeImpact(
   newValue: string | number,
   reason?: string,
   signal?: AbortSignal
-): Promise<any> {
+): Promise<DynamicChangeImpactResult> {
   return request('/ai/change-impact', {
     method: 'POST',
     body: JSON.stringify({ eventState, changeType, newValue, reason }),

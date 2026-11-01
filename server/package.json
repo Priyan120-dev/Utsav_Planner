@@ -9,7 +9,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "echo 'Linting server...'"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@google/genai": "^2.31.0",
@@ -26,10 +26,14 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.1",
     "@types/supertest": "^6.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.72.1",
+    "@typescript-eslint/parser": "^8.72.1",
     "@vitest/coverage-v8": "^2.1.9",
+    "eslint": "^10.14.0",
     "supertest": "^7.0.0",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^2.1.8"
   }
 }

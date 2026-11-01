@@ -10,17 +10,15 @@ import * as api from '../../services/api.js';
 
 export const BudgetTab: React.FC = () => {
   const { eventState, rebalanceCategoryBudget, setBudgetTradeoffAdvice } = useEvent();
-  if (!eventState) return null;
-
-  const { budget, profile } = eventState;
-  const categories = Object.values(budget.categories);
 
   // View format toggle state (Donut / Bar / Table)
   const [viewFormat, setViewFormat] = useState<'donut' | 'bar' | 'table'>('donut');
 
   // Keep a reference to the latest eventState for the AI advice call
   const eventStateRef = useRef(eventState);
-  eventStateRef.current = eventState;
+  useEffect(() => {
+    eventStateRef.current = eventState;
+  }, [eventState]);
 
   // Track in-flight request and sequence counter to discard stale responses
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -72,20 +70,16 @@ export const BudgetTab: React.FC = () => {
 
     setIsAiAnalyzing(true);
 
-    api.getBudgetTradeoffAdvice(
-      currentState,
-      category,
-      percentage,
-      controller.signal
-    )
-      .then(tradeoff => {
+    api
+      .getBudgetTradeoffAdvice(currentState, category, percentage, controller.signal)
+      .then((tradeoff) => {
         // Ignore stale responses or aborted calls
         if (controller.signal.aborted || requestIdRef.current !== currentReqId) {
           return;
         }
         setBudgetTradeoffAdvice(tradeoff);
       })
-      .catch(err => {
+      .catch((err) => {
         if (err.name === 'AbortError' || controller.signal.aborted) {
           return; // Aborted cleanly, ignore
         }
@@ -110,6 +104,10 @@ export const BudgetTab: React.FC = () => {
     };
   }, []);
 
+  if (!eventState) return null;
+
+  const { budget, profile } = eventState;
+  const categories = Object.values(budget.categories);
   const aiTradeoff = budget.lastAiTradeoff;
 
   return (
@@ -124,7 +122,15 @@ export const BudgetTab: React.FC = () => {
             <DisclaimerBadge />
           </div>
           <p className="text-xs text-utsav-cream-800 mt-1">
-            Total Budget: <strong className="text-utsav-cream-900">₹{budget.totalBudgetINR.toLocaleString('en-IN')}</strong> &bull; Per Head: <strong className="text-utsav-cream-900">₹{budget.perGuestTotalINR.toLocaleString('en-IN')}</strong> ({profile.expectedGuests} guests)
+            Total Budget:{' '}
+            <strong className="text-utsav-cream-900">
+              ₹{budget.totalBudgetINR.toLocaleString('en-IN')}
+            </strong>{' '}
+            &bull; Per Head:{' '}
+            <strong className="text-utsav-cream-900">
+              ₹{budget.perGuestTotalINR.toLocaleString('en-IN')}
+            </strong>{' '}
+            ({profile.expectedGuests} guests)
           </p>
         </div>
 
@@ -139,9 +145,7 @@ export const BudgetTab: React.FC = () => {
       {/* Chart Section with Donut / Bar / Table View Toggle */}
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-xs font-semibold text-utsav-cream-800">
-            Chart View:
-          </span>
+          <span className="text-xs font-semibold text-utsav-cream-800">Chart View:</span>
           <div
             role="group"
             aria-label="Budget visual view format"
@@ -211,7 +215,10 @@ export const BudgetTab: React.FC = () => {
                     </span>
                   )}
                 </h3>
-                <DisclaimerBadge customText={aiTradeoff.disclaimer} className="py-0 px-2 text-[10px]" />
+                <DisclaimerBadge
+                  customText={aiTradeoff.disclaimer}
+                  className="py-0 px-2 text-[10px]"
+                />
               </div>
 
               <p className="text-xs text-utsav-cream-900 leading-relaxed font-medium">
@@ -254,7 +261,7 @@ export const BudgetTab: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
-          {categories.map(item => {
+          {categories.map((item) => {
             const currentVal = item.percentage;
             const currentAmount = item.allocatedAmountINR;
             const currentPerHead = item.perGuestINR;
@@ -278,9 +285,7 @@ export const BudgetTab: React.FC = () => {
                     )}
                   </label>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-utsav-cream-900">
-                      {currentVal}%
-                    </span>
+                    <span className="text-xs font-bold text-utsav-cream-900">{currentVal}%</span>
                     <span className="text-xs font-semibold text-utsav-saffron-800">
                       ₹{currentAmount.toLocaleString('en-IN')}
                     </span>
@@ -295,7 +300,7 @@ export const BudgetTab: React.FC = () => {
                   max={isContingency ? 40 : 80}
                   step="1"
                   value={currentVal}
-                  onChange={e => handleSliderChange(item.category, Number(e.target.value))}
+                  onChange={(e) => handleSliderChange(item.category, Number(e.target.value))}
                   className="w-full accent-utsav-saffron-600 cursor-pointer h-2 bg-utsav-cream-200 rounded-lg"
                   aria-label={`${item.label} allocation percentage`}
                 />

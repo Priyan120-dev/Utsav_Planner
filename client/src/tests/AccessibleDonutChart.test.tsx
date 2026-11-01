@@ -32,7 +32,9 @@ describe('AccessibleDonutChart Component', () => {
     expect(table).toBeInTheDocument();
 
     // Verify table caption and structure
-    expect(screen.getByText('Detailed event budget allocation breakdown by category')).toBeInTheDocument();
+    expect(
+      screen.getByText('Detailed event budget allocation breakdown by category')
+    ).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Category/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Share \(%\)/i })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Amount \(₹\)/i })).toBeInTheDocument();
@@ -48,7 +50,9 @@ describe('AccessibleDonutChart Component', () => {
 
     // Table is immediately present without clicking
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByText('Detailed event budget allocation breakdown by category')).toBeInTheDocument();
+    expect(
+      screen.getByText('Detailed event budget allocation breakdown by category')
+    ).toBeInTheDocument();
     // In forcedView mode, internal toggle button is suppressed
     expect(screen.queryByRole('button', { name: /Show Chart/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Accessible Table/i })).not.toBeInTheDocument();

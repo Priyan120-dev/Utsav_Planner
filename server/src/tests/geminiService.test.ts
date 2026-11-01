@@ -93,10 +93,12 @@ describe('GeminiService Retry and Error Handling', () => {
   it('handles 404 model-not-found error: logs distinct message, friendly client error, and does NOT retry', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const error404: any = new Error(
-      'models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash'
+    const error404 = Object.assign(
+      new Error(
+        'models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash'
+      ),
+      { status: 404 }
     );
-    error404.status = 404;
     mockGenerateContent.mockRejectedValueOnce(error404);
 
     await expect(
@@ -122,8 +124,9 @@ describe('GeminiService Retry and Error Handling', () => {
   it('handles 429 quota error: logs distinct message, friendly client error, and does NOT retry', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const error429: any = new Error('Resource has been exhausted (e.g. check quota).');
-    error429.status = 429;
+    const error429 = Object.assign(new Error('Resource has been exhausted (e.g. check quota).'), {
+      status: 429
+    });
     mockGenerateContent.mockRejectedValueOnce(error429);
 
     await expect(
@@ -149,8 +152,9 @@ describe('GeminiService Retry and Error Handling', () => {
   it('handles 401/403 auth error: logs distinct message without secrets, friendly client error, and does NOT retry', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const errorAuth: any = new Error('API key not valid. Please pass a valid API key.');
-    errorAuth.status = 403;
+    const errorAuth = Object.assign(new Error('API key not valid. Please pass a valid API key.'), {
+      status: 403
+    });
     mockGenerateContent.mockRejectedValueOnce(errorAuth);
 
     await expect(
@@ -183,8 +187,9 @@ describe('GeminiService Retry and Error Handling', () => {
   it('retries on timeout: succeeds when retry call responds', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const timeoutErr: any = new Error('The operation was aborted due to timeout');
-    timeoutErr.name = 'AbortError';
+    const timeoutErr = Object.assign(new Error('The operation was aborted due to timeout'), {
+      name: 'AbortError'
+    });
 
     // 1st attempt: timeout
     mockGenerateContent.mockRejectedValueOnce(timeoutErr);
@@ -203,16 +208,15 @@ describe('GeminiService Retry and Error Handling', () => {
 
     expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     expect(result).toEqual({ greeting: 'Recovered after timeout', count: 1 });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[Gemini Error Timeout]')
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[Gemini Error Timeout]'));
   });
 
   it('handles repeated timeout: logs distinct message and returns friendly client error after retry failure', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    const timeoutErr: any = new Error('Deadline exceeded on request');
-    timeoutErr.code = 'ETIMEDOUT';
+    const timeoutErr = Object.assign(new Error('Deadline exceeded on request'), {
+      code: 'ETIMEDOUT'
+    });
 
     // Both attempts time out
     mockGenerateContent.mockRejectedValue(timeoutErr);
@@ -224,13 +228,9 @@ describe('GeminiService Retry and Error Handling', () => {
         cachePrefix: 'test_timeout_fail',
         cachePayload: { testId: 7 }
       })
-    ).rejects.toThrow(
-      'The AI service request timed out. Please try again.'
-    );
+    ).rejects.toThrow('The AI service request timed out. Please try again.');
 
     expect(mockGenerateContent).toHaveBeenCalledTimes(2);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[Gemini Error Timeout]')
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[Gemini Error Timeout]'));
   });
 });

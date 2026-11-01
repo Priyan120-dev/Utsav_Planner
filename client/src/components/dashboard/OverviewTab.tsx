@@ -1,6 +1,15 @@
 import React from 'react';
 import { useEvent } from '../../context/EventContext.js';
-import { Calendar, Users, IndianRupee, MapPin, Sparkles, CheckCircle2, ShieldCheck, Heart } from 'lucide-react';
+import {
+  Calendar,
+  Users,
+  IndianRupee,
+  MapPin,
+  Sparkles,
+  CheckCircle2,
+  ShieldCheck,
+  Heart
+} from 'lucide-react';
 import { DisclaimerBadge } from '../common/DisclaimerBadge.js';
 
 export const OverviewTab: React.FC = () => {
@@ -17,14 +26,17 @@ export const OverviewTab: React.FC = () => {
 
   // Compute Readiness Score (0 - 100%)
   const totalTasks = timeline.tasks.length;
-  const doneTasks = timeline.tasks.filter(t => t.status === 'done').length;
+  const doneTasks = timeline.tasks.filter((t) => t.status === 'done').length;
   const taskProgress = totalTasks > 0 ? (doneTasks / totalTasks) * 40 : 10; // max 40 points
   const vendorBriefCount = Object.keys(vendorBriefs).length;
   const vendorProgress = Math.min(30, vendorBriefCount * 10); // max 30 points
   const quotesCount = quotes.length;
   const quotesProgress = Math.min(20, quotesCount * 5); // max 20 points
   const contingencyBonus = budget.contingencyPercent >= 5 ? 10 : 0; // 10 points
-  const readinessScore = Math.min(100, Math.round(taskProgress + vendorProgress + quotesProgress + contingencyBonus));
+  const readinessScore = Math.min(
+    100,
+    Math.round(taskProgress + vendorProgress + quotesProgress + contingencyBonus)
+  );
 
   const recs = profile.recommendations;
 
@@ -40,9 +52,7 @@ export const OverviewTab: React.FC = () => {
           <h2 className="text-2xl sm:text-3xl font-extrabold font-display tracking-tight text-white">
             {profile.title}
           </h2>
-          <p className="mt-1 text-xs sm:text-sm text-white/90">
-            {profile.atmosphereTheme}
-          </p>
+          <p className="mt-1 text-xs sm:text-sm text-white/90">{profile.atmosphereTheme}</p>
 
           <div className="mt-4 flex flex-wrap items-center gap-4 text-xs font-medium text-white/95">
             <span className="flex items-center gap-1.5">
@@ -112,7 +122,8 @@ export const OverviewTab: React.FC = () => {
             {budget.contingencyPercent}%
           </div>
           <span className="text-[11px] text-utsav-cream-800 mt-1 block">
-            ₹{budget.categories.contingency?.allocatedAmountINR.toLocaleString('en-IN')} emergency reserve
+            ₹{budget.categories.contingency?.allocatedAmountINR.toLocaleString('en-IN')} emergency
+            reserve
           </span>
         </div>
 
@@ -233,12 +244,18 @@ export const OverviewTab: React.FC = () => {
 
         <div className="bg-white p-4 rounded-2xl border border-utsav-cream-200 text-xs">
           <span className="font-bold text-utsav-cream-900 block mb-1">Dietary Arrangements</span>
-          <p className="text-utsav-cream-800">{profile.dietaryNeeds.join(', ') || 'Standard Dining'}</p>
+          <p className="text-utsav-cream-800">
+            {profile.dietaryNeeds.join(', ') || 'Standard Dining'}
+          </p>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-utsav-cream-200 text-xs">
-          <span className="font-bold text-utsav-cream-900 block mb-1">Accessibility Provisions</span>
-          <p className="text-utsav-cream-800">{profile.accessibilityNeeds.join(', ') || 'Standard Access'}</p>
+          <span className="font-bold text-utsav-cream-900 block mb-1">
+            Accessibility Provisions
+          </span>
+          <p className="text-utsav-cream-800">
+            {profile.accessibilityNeeds.join(', ') || 'Standard Access'}
+          </p>
         </div>
       </div>
     </div>

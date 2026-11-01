@@ -17,10 +17,9 @@ describe('useDebounce hook', () => {
   });
 
   it('updates the debounced value only after the specified delay', () => {
-    const { result, rerender } = renderHook(
-      ({ value, delay }) => useDebounce(value, delay),
-      { initialProps: { value: 'initial', delay: 500 } }
-    );
+    const { result, rerender } = renderHook(({ value, delay }) => useDebounce(value, delay), {
+      initialProps: { value: 'initial', delay: 500 }
+    });
 
     rerender({ value: 'updated', delay: 500 });
     expect(result.current).toBe('initial');
@@ -37,10 +36,9 @@ describe('useDebounce hook', () => {
   });
 
   it('resets timer if value changes rapidly before delay expires', () => {
-    const { result, rerender } = renderHook(
-      ({ value }) => useDebounce(value, 300),
-      { initialProps: { value: 'first' } }
-    );
+    const { result, rerender } = renderHook(({ value }) => useDebounce(value, 300), {
+      initialProps: { value: 'first' }
+    });
 
     rerender({ value: 'second' });
     act(() => {
@@ -61,10 +59,9 @@ describe('useDebounce hook', () => {
   });
 
   it('uses default delay of 600ms if not specified', () => {
-    const { result, rerender } = renderHook(
-      ({ value }) => useDebounce(value),
-      { initialProps: { value: 'start' } }
-    );
+    const { result, rerender } = renderHook(({ value }) => useDebounce(value), {
+      initialProps: { value: 'start' }
+    });
 
     rerender({ value: 'end' });
     act(() => {

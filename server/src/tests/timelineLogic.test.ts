@@ -68,7 +68,7 @@ describe('Timeline Pure Logic', () => {
 
   it('topologically sorts tasks with prerequisites first', () => {
     const sorted = topologicalSort(sampleTasks);
-    const order = sorted.map(t => t.id);
+    const order = sorted.map((t) => t.id);
 
     // task_venue must come before task_decor and task_catering
     expect(order.indexOf('task_venue')).toBeLessThan(order.indexOf('task_decor'));
@@ -93,9 +93,9 @@ describe('Timeline Pure Logic', () => {
   it('locks tasks whose prerequisites are incomplete and unlocks when done', () => {
     const evaluated = evaluateTaskStatuses(sampleTasks, '2026-10-30', '2026-07-01');
 
-    const venue = evaluated.find(t => t.id === 'task_venue');
-    const decor = evaluated.find(t => t.id === 'task_decor');
-    const invites = evaluated.find(t => t.id === 'task_invites');
+    const venue = evaluated.find((t) => t.id === 'task_venue');
+    const decor = evaluated.find((t) => t.id === 'task_decor');
+    const invites = evaluated.find((t) => t.id === 'task_invites');
 
     expect(venue?.status).toBe('done');
     // Since venue is done, decor (which depends only on venue) is ready

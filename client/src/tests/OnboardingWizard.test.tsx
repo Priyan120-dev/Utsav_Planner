@@ -24,7 +24,9 @@ describe('OnboardingWizard Component', () => {
     fireEvent.click(submitBtn);
 
     expect(
-      await screen.findByText('Please write a brief description of your event (at least 10 characters).')
+      await screen.findByText(
+        'Please write a brief description of your event (at least 10 characters).'
+      )
     ).toBeInTheDocument();
   });
 
@@ -43,7 +45,9 @@ describe('OnboardingWizard Component', () => {
     fireEvent.click(submitBtn);
 
     expect(
-      await screen.findByText('Event description cannot exceed 5000 characters. Please shorten your description.')
+      await screen.findByText(
+        'Event description cannot exceed 5000 characters. Please shorten your description.'
+      )
     ).toBeInTheDocument();
   });
 
@@ -127,9 +131,9 @@ describe('OnboardingWizard Component', () => {
       occasion: 'wedding',
       title: 'Should Not Overwrite User Confirmed Title',
       totalBudgetINR: 999999, // Should NOT overwrite confirmed 2500000
-      expectedGuests: 50,     // Should NOT overwrite confirmed 250
-      eventDate: '2027-01-01',// Should NOT overwrite confirmed date
-      city: 'Delhi',          // Should NOT overwrite confirmed Udaipur
+      expectedGuests: 50, // Should NOT overwrite confirmed 250
+      eventDate: '2027-01-01', // Should NOT overwrite confirmed date
+      city: 'Delhi', // Should NOT overwrite confirmed Udaipur
       atmosphereTheme: 'Royal Heritage',
       culturalNeeds: ['Sangeet', 'Haldi', 'Mehendi Ceremony'],
       dietaryNeeds: ['Jain Food Counter'],
@@ -179,7 +183,9 @@ describe('OnboardingWizard Component', () => {
 
     // Wait for clarification box to dismiss once follow-up questions are resolved
     await waitFor(() => {
-      expect(screen.queryByText(/AI Orchestrator Clarification Questions/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/AI Orchestrator Clarification Questions/i)
+      ).not.toBeInTheDocument();
     });
 
     // Verify Step 1 fields (Occasion & Scale) were preserved
@@ -253,7 +259,9 @@ describe('OnboardingWizard Component', () => {
     const finishBtn = screen.getByRole('button', { name: /Generate Orchestrated Plan/i });
     fireEvent.click(finishBtn);
 
-    expect(await screen.findByTestId('initialized-title')).toHaveTextContent('Our Royal Family Celebration');
+    expect(await screen.findByTestId('initialized-title')).toHaveTextContent(
+      'Our Royal Family Celebration'
+    );
   });
 
   it('allows loading pre-filled royal wedding demo directly from free-text tab', async () => {
@@ -278,7 +286,8 @@ describe('OnboardingWizard Component', () => {
     const demoBtn = screen.getByRole('button', { name: /Or load pre-filled Royal Wedding Demo/i });
     fireEvent.click(demoBtn);
 
-    expect(await screen.findByTestId('demo-title')).toHaveTextContent(/Ananya & Rohit's Royal Palace Wedding/i);
+    expect(await screen.findByTestId('demo-title')).toHaveTextContent(
+      /Ananya & Rohit's Royal Palace Wedding/i
+    );
   });
 });
-

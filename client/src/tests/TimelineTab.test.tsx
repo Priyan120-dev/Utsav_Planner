@@ -27,7 +27,12 @@ describe('TimelineTab Component', () => {
     version: 1,
     id: 'evt-timeline-test',
     profile: mockProfile,
-    budget: initializeBudgetState(1500000, 'wedding', ['Catering & Dining', 'Venue & Grounds', 'Decor, Mandap & Lighting'], 150),
+    budget: initializeBudgetState(
+      1500000,
+      'wedding',
+      ['Catering & Dining', 'Venue & Grounds', 'Decor, Mandap & Lighting'],
+      150
+    ),
     timeline: {
       tasks: [
         {
@@ -132,7 +137,9 @@ describe('TimelineTab Component', () => {
 
     // Dynamically import api to spy on analyzeDateShiftImpact
     const api = await import('../services/api.js');
-    const analyzeSpy = vi.spyOn(api, 'analyzeDateShiftImpact').mockResolvedValueOnce(mockDateShiftImpact);
+    const analyzeSpy = vi
+      .spyOn(api, 'analyzeDateShiftImpact')
+      .mockResolvedValueOnce(mockDateShiftImpact);
 
     render(
       <EventProvider>
@@ -141,7 +148,9 @@ describe('TimelineTab Component', () => {
     );
 
     // Initial event date in header
-    expect(screen.getByText(/Deadlines computed deterministically from 2026-12-25/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Deadlines computed deterministically from 2026-12-25/i)
+    ).toBeInTheDocument();
 
     // Click "Simulate Date Shift (Diff)" to open drawer
     const simulateBtn = screen.getByRole('button', { name: /Simulate Date Shift \(Diff\)/i });
@@ -177,7 +186,9 @@ describe('TimelineTab Component', () => {
     expect(screen.queryByText(/Simulate Moving Event Date/i)).not.toBeInTheDocument();
 
     // The timeline header must now reflect the new event date
-    expect(screen.getByText(/Deadlines computed deterministically from 2026-11-25/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Deadlines computed deterministically from 2026-11-25/i)
+    ).toBeInTheDocument();
   });
 
   it('allows cancelling date shift simulation without modifying the event plan', async () => {
@@ -199,6 +210,8 @@ describe('TimelineTab Component', () => {
 
     // Modal closes and original date remains unchanged
     expect(screen.queryByText(/Simulate Moving Event Date/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Deadlines computed deterministically from 2026-12-25/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Deadlines computed deterministically from 2026-12-25/i)
+    ).toBeInTheDocument();
   });
 });

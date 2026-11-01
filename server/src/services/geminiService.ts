@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { config } from '../config.js';
 import { requestCache, MemoryCache } from '../cache.js';
 import { SYSTEM_PROMPT_V1 } from '../prompts/systemPrompt.js';
+import { logger } from '../logger.js';
 
 let genAIClient: GoogleGenAI | null = null;
 
@@ -25,7 +26,7 @@ export function resetClient(): void {
 
 export interface GenerateStructuredOptions<T> {
   prompt: string;
-  schema: z.ZodType<T, any, any>;
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>;
   cachePrefix?: string;
   cachePayload?: unknown;
   systemInstruction?: string;
@@ -46,11 +47,16 @@ export interface ClassifiedGeminiError {
  * Separates 404 model-not-found, 429 quota, 401/403 auth, timeout, and invalid JSON.
  * Ensures server logs contain no secrets (e.g. API keys).
  */
-export function classifyGeminiError(err: any, modelName: string): ClassifiedGeminiError {
-  const status = Number(err?.status ?? err?.statusCode ?? err?.code ?? err?.error?.code);
-  const msg = String(err?.message ?? err?.error?.message ?? err ?? '');
-  const name = String(err?.name ?? '');
-  const code = String(err?.code ?? '');
+export function classifyGeminiError(err: unknown, modelName: string): ClassifiedGeminiError {
+  const errObj = typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : null;
+  const errError =
+    typeof errObj?.error === 'object' && errObj?.error !== null
+      ? (errObj.error as Record<string, unknown>)
+      : null;
+  const status = Number(errObj?.status ?? errObj?.statusCode ?? errObj?.code ?? errError?.code);
+  const msg = String(errObj?.message ?? errError?.message ?? err ?? '');
+  const name = String(errObj?.name ?? '');
+  const code = String(errObj?.code ?? '');
 
   // 1. 404 Model Not Found / Unsupported
   if (
@@ -62,15 +68,13 @@ export function classifyGeminiError(err: any, modelName: string): ClassifiedGemi
       category: '404',
       canRetry: false,
       serverLog: `[Gemini Error 404 - Model Not Found] Model "${modelName}" was not found or is no longer available: ${msg}`,
-      clientMessage: 'The requested AI model is unavailable. Please check the model configuration or try again later.'
+      clientMessage:
+        'The requested AI model is unavailable. Please check the model configuration or try again later.'
     };
   }
 
   // 2. 429 Quota Exceeded / Rate Limit
-  if (
-    status === 429 ||
-    /429|resource_exhausted|quota|rate limit|too many requests/i.test(msg)
-  ) {
+  if (status === 429 || /429|resource_exhausted|quota|rate limit|too many requests/i.test(msg)) {
     return {
       category: '429',
       canRetry: false,
@@ -89,7 +93,8 @@ export function classifyGeminiError(err: any, modelName: string): ClassifiedGemi
       category: 'auth',
       canRetry: false,
       serverLog: `[Gemini Error 401/403 - Auth Failure] Authentication failed for AI service (status ${status || 'unauthorized'}): ${msg}`,
-      clientMessage: 'Authentication with the AI service failed. Please verify API key configuration.'
+      clientMessage:
+        'Authentication with the AI service failed. Please verify API key configuration.'
     };
   }
 
@@ -118,7 +123,8 @@ export function classifyGeminiError(err: any, modelName: string): ClassifiedGemi
       category: 'invalid_json',
       canRetry: true,
       serverLog: `[Gemini Error Invalid JSON] Model output was not valid JSON or failed schema validation: ${msg}`,
-      clientMessage: 'The AI assistant was unable to format its response correctly. Please try again or refine your input.'
+      clientMessage:
+        'The AI assistant was unable to format its response correctly. Please try again or refine your input.'
     };
   }
 
@@ -127,7 +133,8 @@ export function classifyGeminiError(err: any, modelName: string): ClassifiedGemi
     category: 'unknown',
     canRetry: false,
     serverLog: `[Gemini Error Unknown] Unexpected error from AI service for model "${modelName}": ${msg}`,
-    clientMessage: 'An unexpected error occurred while communicating with the AI service. Please try again.'
+    clientMessage:
+      'An unexpected error occurred while communicating with the AI service. Please try again.'
   };
 }
 
@@ -173,7 +180,7 @@ export async function generateStructuredContent<T>(
   const client = getClient();
   const modelName = config.GEMINI_MODEL || 'gemini-3.8-flash';
 
-  const baseConfig: any = {
+  const baseConfig: Record<string, unknown> = {
     systemInstruction,
     temperature,
     responseMimeType: 'application/json',
@@ -185,7 +192,6 @@ export async function generateStructuredContent<T>(
   // 2. First attempt
   let lastRawText = '';
   let retryNeeded = false;
-  let retryReason = '';
 
   try {
     const response = await client.models.generateContent({
@@ -200,12 +206,12 @@ export async function generateStructuredContent<T>(
     let parsedJson: unknown;
     try {
       parsedJson = JSON.parse(cleaned);
-    } catch (parseErr: any) {
-      console.error('[Gemini Error Invalid JSON] Model output was not valid JSON (attempt 1):');
-      console.error('Raw model response:', lastRawText);
-      console.error('JSON parse error:', parseErr.message);
+    } catch (parseErr: unknown) {
+      const parseErrMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
+      logger.error('[Gemini Error Invalid JSON] Model output was not valid JSON (attempt 1):');
+      logger.error('Raw model response:', lastRawText);
+      logger.error('JSON parse error:', parseErrMsg);
       retryNeeded = true;
-      retryReason = `Invalid JSON: ${parseErr.message}`;
     }
 
     if (!retryNeeded) {
@@ -216,15 +222,16 @@ export async function generateStructuredContent<T>(
       }
 
       // Schema validation failed on first attempt
-      console.error('[Gemini Error Schema Validation] Model output failed Zod validation (attempt 1):');
-      console.error('Raw model response:', lastRawText);
-      console.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
+      logger.error(
+        '[Gemini Error Schema Validation] Model output failed Zod validation (attempt 1):'
+      );
+      logger.error('Raw model response:', lastRawText);
+      logger.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
       retryNeeded = true;
-      retryReason = `Schema validation failed: ${validated.error.message}`;
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     const classified = classifyGeminiError(err, modelName);
-    console.error(classified.serverLog);
+    logger.error(classified.serverLog);
 
     if (!classified.canRetry) {
       // 404, 429, 401/403, unknown: do not retry!
@@ -233,7 +240,6 @@ export async function generateStructuredContent<T>(
 
     // Timeout or retryable error
     retryNeeded = true;
-    retryReason = classified.serverLog;
   }
 
   if (!retryNeeded) {
@@ -241,7 +247,7 @@ export async function generateStructuredContent<T>(
   }
 
   // 3. Retry ONCE (only for invalid JSON or timeout)
-  console.log('Retrying Gemini generation with error correction prompt...');
+  logger.info('Retrying Gemini generation with error correction prompt...');
   try {
     const retryPrompt = `${prompt}
 
@@ -264,10 +270,11 @@ Please regenerate the response adhering strictly to the schema rules. Output ONL
     let parsedJson: unknown;
     try {
       parsedJson = JSON.parse(cleaned);
-    } catch (parseErr: any) {
-      console.error('[Gemini Error Invalid JSON] Model output was not valid JSON after retry:');
-      console.error('Raw model response:', retryRawText);
-      console.error('JSON parse error:', parseErr.message);
+    } catch (parseErr: unknown) {
+      const parseErrMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
+      logger.error('[Gemini Error Invalid JSON] Model output was not valid JSON after retry:');
+      logger.error('Raw model response:', retryRawText);
+      logger.error('JSON parse error:', parseErrMsg);
       throw new Error(
         'The AI assistant was unable to format its response correctly. Please try again or refine your input.'
       );
@@ -279,22 +286,26 @@ Please regenerate the response adhering strictly to the schema rules. Output ONL
       return validated.data;
     }
 
-    console.error('[Gemini Error Schema Validation] Model output failed Zod validation after retry:');
-    console.error('Raw model response:', retryRawText);
-    console.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
+    logger.error(
+      '[Gemini Error Schema Validation] Model output failed Zod validation after retry:'
+    );
+    logger.error('Raw model response:', retryRawText);
+    logger.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
     throw new Error(
       'The AI assistant was unable to format its response correctly. Please try again or refine your input.'
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     const classified = classifyGeminiError(error, modelName);
+    const errorMsg = error instanceof Error ? error.message : '';
     // If it's already one of our friendly client messages, rethrow it directly
     if (
-      error.message === 'The AI assistant was unable to format its response correctly. Please try again or refine your input.' ||
-      error.message === classified.clientMessage
+      errorMsg ===
+        'The AI assistant was unable to format its response correctly. Please try again or refine your input.' ||
+      errorMsg === classified.clientMessage
     ) {
       throw error;
     }
-    console.error(classified.serverLog);
+    logger.error(classified.serverLog);
     throw new Error(classified.clientMessage);
   }
 }

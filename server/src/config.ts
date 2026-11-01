@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { z } from 'zod';
+import { logger } from './logger.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -19,7 +20,7 @@ const ConfigSchema = z.object({
 const parsed = ConfigSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('Invalid environment configuration:', parsed.error.format());
+  logger.error('Invalid environment configuration:', parsed.error.format());
   process.exit(1);
 }
 
