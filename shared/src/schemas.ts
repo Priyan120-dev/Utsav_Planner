@@ -31,20 +31,53 @@ export const CulturalRecommendationsSchema = z.object({
   culturalNotes: z.array(z.string()).default([])
 });
 
+/**
+ * Flexible string array schema that tolerates harmless variations from models
+ * (e.g., returning a single string or comma-separated string instead of an array).
+ */
+export const FlexibleStringArraySchema: z.ZodType<string[], z.ZodTypeDef, unknown> = z.preprocess((val) => {
+  if (typeof val === 'string') {
+    const trimmed = val.trim();
+    if (!trimmed) return [];
+    if (trimmed.includes(',')) {
+      return trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+    return [trimmed];
+  }
+  if (Array.isArray(val)) {
+    return val.map((v) => (typeof v === 'string' ? v.trim() : String(v))).filter(Boolean);
+  }
+  return val;
+}, z.array(z.string()).default([]));
+
 export const EventProfileSchema = z.object({
   occasion: OccasionTypeSchema,
   title: z.string().min(1, 'Title is required'),
-  totalBudgetINR: z.number().positive('Budget must be positive'),
-  expectedGuests: z.number().int().positive('Guest count must be at least 1'),
+  totalBudgetINR: z.coerce.number().positive('Budget must be positive'),
+  expectedGuests: z.coerce.number().int().positive('Guest count must be at least 1'),
   eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   city: z.string().min(1, 'City is required'),
   atmosphereTheme: z.string().default('Warm and celebratory'),
-  culturalNeeds: z.array(z.string()).default([]),
-  dietaryNeeds: z.array(z.string()).default([]),
-  accessibilityNeeds: z.array(z.string()).default([]),
-  mustHaves: z.array(z.string()).default([]),
-  priorities: z.tuple([z.string(), z.string(), z.string()]),
-  followUpQuestions: z.array(z.string()).max(3).optional(),
+  culturalNeeds: FlexibleStringArraySchema,
+  dietaryNeeds: FlexibleStringArraySchema,
+  accessibilityNeeds: FlexibleStringArraySchema,
+  mustHaves: FlexibleStringArraySchema,
+  priorities: z.preprocess((val) => {
+    if (Array.isArray(val) && val.length > 3) {
+      return val.slice(0, 3);
+    }
+    return val;
+  }, z.tuple([z.string(), z.string(), z.string()])),
+  followUpQuestions: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      return trimmed ? [trimmed] : [];
+    }
+    if (Array.isArray(val) && val.length > 3) {
+      return val.slice(0, 3);
+    }
+    return val;
+  }, z.array(z.string()).max(3).optional()),
   recommendations: CulturalRecommendationsSchema.optional()
 });
 
@@ -59,7 +92,12 @@ export const BudgetCategoryItemSchema = z.object({
 
 export const BudgetTradeoffAiResponseSchema = z.object({
   explanation: z.string().min(1),
-  actionableOptions: z.array(z.string()).min(2).max(4),
+  actionableOptions: z.preprocess((val) => {
+    if (Array.isArray(val) && val.length > 4) {
+      return val.slice(0, 4);
+    }
+    return val;
+  }, z.array(z.string()).min(2).max(4)),
   disclaimer: z.string().default('Estimate, not a verified vendor price.')
 });
 
@@ -83,7 +121,9 @@ import {
   TimelineState, 
   QuoteItem, 
   ChangeLogEntry,
-  BudgetCategory
+  BudgetCategory,
+  PricingTier,
+  AdditionalCharge
 } from './types.js';
 
 export const BudgetStateSchema: z.ZodType<BudgetState, z.ZodTypeDef, any> = z.object({
@@ -171,48 +211,92 @@ export const GeneratedTaskItemAiSchema = z.object({
   dependsOn: z.array(z.string()).default([])
 });
 
-export const GeneratedTasksAiResponseSchema = z.object({
-  tasks: z.array(GeneratedTaskItemAiSchema)
-});
+export type GeneratedTaskItemAi = z.infer<typeof GeneratedTaskItemAiSchema>;
 
-export const QuoteExtractionAiResponseSchema = z.object({
+export interface GeneratedTasksAiResponse {
+  tasks: GeneratedTaskItemAi[];
+}
+
+export const GeneratedTasksAiResponseSchema: z.ZodType<GeneratedTasksAiResponse, z.ZodTypeDef, any> = z.preprocess((val) => {
+  if (Array.isArray(val)) {
+    return { tasks: val };
+  }
+  return val;
+}, z.object({
+  tasks: z.array(GeneratedTaskItemAiSchema)
+}));
+
+export interface QuoteExtractionAiResponse {
+  vendorName: string;
+  basePriceINR: number;
+  tiers?: PricingTier[] | null;
+  guestCapacity?: number | null;
+  inclusions: string[];
+  exclusions: string[];
+  additionalChargesBreakdown: AdditionalCharge[];
+  paymentTerms: string | null;
+  cancellationPolicy: string | null;
+  missingInfo: string[];
+  redFlags: string[];
+}
+
+export const QuoteExtractionAiResponseSchema: z.ZodType<QuoteExtractionAiResponse, z.ZodTypeDef, any> = z.object({
   vendorName: z.string().min(1),
-  basePriceINR: z.number().nonnegative(),
+  basePriceINR: z.coerce.number().nonnegative(),
   tiers: z.array(PricingTierSchema).nullable().optional().default(null),
-  guestCapacity: z.number().nullable().default(null),
-  inclusions: z.array(z.string()).default([]),
-  exclusions: z.array(z.string()).default([]),
+  guestCapacity: z.coerce.number().int().positive().nullable().default(null),
+  inclusions: FlexibleStringArraySchema,
+  exclusions: FlexibleStringArraySchema,
   additionalChargesBreakdown: z.array(AdditionalChargeSchema).default([]),
   paymentTerms: z.string().nullable().default(null),
   cancellationPolicy: z.string().nullable().default(null),
-  missingInfo: z.array(z.string()).default([]),
-  redFlags: z.array(z.string()).default([])
+  missingInfo: FlexibleStringArraySchema,
+  redFlags: FlexibleStringArraySchema
 });
 
 export const ParsedProfileAiResponseSchema = z.object({
   occasion: OccasionTypeSchema,
   title: z.string(),
-  totalBudgetINR: z.number().positive(),
-  expectedGuests: z.number().int().positive(),
+  totalBudgetINR: z.coerce.number().positive(),
+  expectedGuests: z.coerce.number().int().positive(),
   eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   city: z.string(),
   atmosphereTheme: z.string(),
-  culturalNeeds: z.array(z.string()),
-  dietaryNeeds: z.array(z.string()),
-  accessibilityNeeds: z.array(z.string()),
-  mustHaves: z.array(z.string()),
-  priorities: z.tuple([z.string(), z.string(), z.string()]),
-  followUpQuestions: z.array(z.string()).max(3).default([]),
+  culturalNeeds: FlexibleStringArraySchema,
+  dietaryNeeds: FlexibleStringArraySchema,
+  accessibilityNeeds: FlexibleStringArraySchema,
+  mustHaves: FlexibleStringArraySchema,
+  priorities: z.preprocess((val) => {
+    if (Array.isArray(val) && val.length > 3) {
+      return val.slice(0, 3);
+    }
+    return val;
+  }, z.tuple([z.string(), z.string(), z.string()])),
+  followUpQuestions: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      return trimmed ? [trimmed] : [];
+    }
+    if (Array.isArray(val) && val.length > 3) {
+      return val.slice(0, 3);
+    }
+    return val;
+  }, z.array(z.string()).max(3).default([])),
   recommendations: CulturalRecommendationsSchema
 });
 
 export const VendorBriefAiResponseSchema = z.object({
   scopeSummary: z.string(),
-  keyInclusions: z.array(z.string()),
+  keyInclusions: FlexibleStringArraySchema,
   capacityRequirement: z.string(),
   timingDetails: z.string(),
-  accessibilityRequirements: z.array(z.string()),
-  negotiationQuestions: z.array(z.string()).min(5).max(12)
+  accessibilityRequirements: FlexibleStringArraySchema,
+  negotiationQuestions: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      return val.split('\n').map((s) => s.replace(/^\d+[\.\)]\s*/, '').trim()).filter(Boolean);
+    }
+    return val;
+  }, z.array(z.string()).min(5).max(12))
 });
 
 export const DateShiftAiResponseSchema = z.object({

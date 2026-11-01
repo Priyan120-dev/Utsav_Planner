@@ -31,6 +31,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=5000
+ENV GEMINI_MODEL=gemini-3.8-flash
 
 # Copy root and server package files
 COPY package*.json ./

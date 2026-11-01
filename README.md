@@ -53,7 +53,7 @@ graph TD
     Debounce --> Server
     Server --> GeminiService
     GeminiService --> Cache
-    GeminiService --> GeminiAPI[("Google Gemini 2.5 Flash")]
+    GeminiService --> GeminiAPI[("Google Gemini 3.8 Flash")]
 ```
 
 ---
@@ -158,7 +158,7 @@ PORT=5000
 NODE_ENV=development
 CLIENT_URL=http://localhost:5173
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.8-flash
 ```
 
 ### 2. Install Dependencies

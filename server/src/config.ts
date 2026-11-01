@@ -13,7 +13,7 @@ const ConfigSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CLIENT_URL: z.string().default('http://localhost:5173'),
   GEMINI_API_KEY: z.string().optional().default(''),
-  GEMINI_MODEL: z.string().default('gemini-2.5-flash')
+  GEMINI_MODEL: z.string().default('gemini-3.8-flash')
 });
 
 const parsed = ConfigSchema.safeParse(process.env);

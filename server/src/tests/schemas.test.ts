@@ -3,7 +3,8 @@ import {
   ParsedProfileAiResponseSchema,
   BudgetTradeoffAiResponseSchema,
   GeneratedTasksAiResponseSchema,
-  QuoteExtractionAiResponseSchema
+  QuoteExtractionAiResponseSchema,
+  VendorBriefAiResponseSchema
 } from '@utsav/shared';
 
 describe('Zod Schema Validation for LLM Responses', () => {
@@ -32,6 +33,43 @@ describe('Zod Schema Validation for LLM Responses', () => {
 
     const result = ParsedProfileAiResponseSchema.safeParse(valid);
     expect(result.success).toBe(true);
+  });
+
+  it('tolerates harmless variations in ParsedProfileAiResponse (comma-separated strings, string numbers, extra priorities)', () => {
+    const harmlessVariation = {
+      occasion: 'wedding',
+      title: 'Kavita & Dev Grand Wedding',
+      totalBudgetINR: '2500000', // String number
+      expectedGuests: '400', // String number
+      eventDate: '2026-11-20',
+      city: 'Udaipur',
+      atmosphereTheme: 'Royal Rajasthani Heritage',
+      culturalNeeds: 'Haldi, Mehendi, Sangeet, Pheras', // Comma-separated string
+      dietaryNeeds: 'Pure Vegetarian', // Single string
+      accessibilityNeeds: 'Wheelchair ramp access, Golf carts for elders', // Comma-separated string
+      mustHaves: 'Live Shehnai at entrance', // Single string
+      priorities: ['Catering', 'Photography', 'Decor', 'Entertainment'], // 4 items (should slice to top 3)
+      followUpQuestions: 'Do you require accommodation for outstation guests?',
+      recommendations: {
+        themes: ['Mewar Palace Elegance'],
+        menuDirections: ['Dal Baati Churma station'],
+        decorIdeas: ['Brass Urli flower floating'],
+        culturalNotes: ['Plan separate timings for evening Sangeet']
+      }
+    };
+
+    const result = ParsedProfileAiResponseSchema.safeParse(harmlessVariation);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.totalBudgetINR).toBe(2500000);
+      expect(result.data.expectedGuests).toBe(400);
+      expect(result.data.culturalNeeds).toEqual(['Haldi', 'Mehendi', 'Sangeet', 'Pheras']);
+      expect(result.data.dietaryNeeds).toEqual(['Pure Vegetarian']);
+      expect(result.data.accessibilityNeeds).toEqual(['Wheelchair ramp access', 'Golf carts for elders']);
+      expect(result.data.priorities).toHaveLength(3);
+      expect(result.data.priorities).toEqual(['Catering', 'Photography', 'Decor']);
+      expect(result.data.followUpQuestions).toEqual(['Do you require accommodation for outstation guests?']);
+    }
   });
 
   it('rejects malformed ParsedProfileAiResponse with invalid occasion or negative budget', () => {
@@ -76,6 +114,34 @@ describe('Zod Schema Validation for LLM Responses', () => {
     }
   });
 
+  it('tolerates top-level array in GeneratedTasksAiResponse from models', () => {
+    const rawArray = [
+      {
+        id: 'venue_booking',
+        title: 'Book auspicious wedding hall',
+        category: 'venue',
+        daysBeforeEvent: 120,
+        priority: 'critical',
+        dependsOn: []
+      },
+      {
+        id: 'catering_tasting',
+        title: 'Sample regional wedding feast',
+        category: 'catering',
+        daysBeforeEvent: 90,
+        priority: 'high',
+        dependsOn: ['venue_booking']
+      }
+    ];
+
+    const result = GeneratedTasksAiResponseSchema.safeParse(rawArray);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.tasks).toHaveLength(2);
+      expect(result.data.tasks[0].id).toBe('venue_booking');
+    }
+  });
+
   it('rejects GeneratedTasksAiResponse if task items lack mandatory fields or have negative daysBeforeEvent', () => {
     const malformed = {
       tasks: [
@@ -92,6 +158,31 @@ describe('Zod Schema Validation for LLM Responses', () => {
 
     const result = GeneratedTasksAiResponseSchema.safeParse(malformed);
     expect(result.success).toBe(false);
+  });
+
+  it('tolerates single string accessibilityRequirements in VendorBriefAiResponse', () => {
+    const brief = {
+      scopeSummary: 'Provide regal mandap and floral decor for 400 guests in Udaipur.',
+      keyInclusions: ['Mandap setup', 'Entrance floral arch', 'Stage lighting'],
+      capacityRequirement: '400 seated guests',
+      timingDetails: 'Setup by 2 PM, event until 11 PM',
+      accessibilityRequirements: 'Wheelchair ramp access required at mandap stage', // string variation
+      negotiationQuestions: [
+        'Is generator diesel backup included in quotation?',
+        'What are the overtime fees past 11 PM?',
+        'Is PPL music license royalty covered?',
+        'What is outside caterer fee?',
+        'What is cancellation policy?'
+      ]
+    };
+
+    const result = VendorBriefAiResponseSchema.safeParse(brief);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.accessibilityRequirements).toEqual([
+        'Wheelchair ramp access required at mandap stage'
+      ]);
+    }
   });
 
   it('validates QuoteExtractionAiResponse handling null for unstated fields without inventing data', () => {

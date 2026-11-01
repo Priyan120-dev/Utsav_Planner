@@ -22,10 +22,10 @@ REQUIREMENTS:
    - eventDate: ISO date YYYY-MM-DD. If vague like "next December" or "in 6 months", pick a realistic future date.
    - city: Indian city or location mentioned (e.g., Mumbai, Delhi, Jaipur, Bengaluru).
    - atmosphereTheme: mood or theme (e.g., "Regal heritage with marigold aesthetics", "Bollywood glam", "Eco-friendly intimate").
-   - culturalNeeds: specific traditions or ceremonies mentioned (e.g., "Mehendi & Sangeet", "Satyanarayan Pooja", "Dhol tasha", "Jain catering").
-   - dietaryNeeds: dietary specifications (e.g., "Pure Vegetarian", "Jain (no onion/garlic)", "Halal", "Vegan counter").
-   - accessibilityNeeds: elder/differently-abled requirements (e.g., "Wheelchair ramp to mandap", "Golf carts for elderly relatives").
-   - mustHaves: key non-negotiable items mentioned.
+   - culturalNeeds: array of specific traditions or ceremonies mentioned (e.g. ["Mehendi & Sangeet", "Satyanarayan Pooja"]).
+   - dietaryNeeds: array of dietary specifications (e.g. ["Pure Vegetarian", "Jain (no onion/garlic)"]).
+   - accessibilityNeeds: array of elder/differently-abled requirements (e.g. ["Wheelchair ramp to mandap", "Golf carts for elderly relatives"]).
+   - mustHaves: array of key non-negotiable items mentioned.
    - priorities: exactly 3 strings representing the top 3 priorities (e.g., ["Catering & Dining", "Photography & Video", "Decor & Ambiance"]).
 2. If key constraints are missing or ambiguous (especially budget, exact date, or guest count), generate at most 3 targeted, polite follow-up questions in "followUpQuestions".
 3. Provide tailored cultural recommendations in "recommendations":
