@@ -78,7 +78,7 @@ app.use(
     if (isAllowed) {
       callback(null, { origin: true, credentials: true });
     } else {
-      const corsError: any = new Error('Origin not allowed');
+      const corsError = new Error('Origin not allowed') as Error & { status?: number };
       corsError.status = 403;
       callback(corsError);
     }
@@ -154,10 +154,10 @@ app.use((_req: Request, res: Response) => {
 });
 
 // Centralized Error Handler (no secrets leaked)
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[SERVER ERROR]:', err.message || err);
-  const status = err.status || 500;
+app.use((err: Error & { status?: number }, _req: Request, res: Response, _next: NextFunction) => {
+  console.error('[SERVER ERROR]:', err?.message || err);
+  const status = typeof err?.status === 'number' ? err.status : 500;
   res.status(status).json({
-    error: err.message || 'An unexpected internal error occurred. Please try again.'
+    error: err?.message || 'An unexpected internal error occurred. Please try again.'
   });
 });

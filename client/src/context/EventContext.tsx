@@ -118,10 +118,11 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
           const tasksRes = await api.generateTimelineTasks(profile);
           initialTasks = tasksRes.tasks || [];
-        } catch (err: any) {
+        } catch (err: unknown) {
+          const errMessage = err instanceof Error ? err.message : String(err);
           console.warn(
             'Task generation failed or skipped, creating fallback starter tasks:',
-            err.message
+            errMessage
           );
           // Fallback core foundation tasks
           initialTasks = [
@@ -200,8 +201,9 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         setEventState(newState);
         announce(`Event initialized with ${evaluatedTasks.length} timeline tasks generated.`);
-      } catch (err: any) {
-        const msg = err.message || 'Failed to initialize event.';
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error && err.message ? err.message : 'Failed to initialize event.';
         setError(msg);
         announce(`Error: ${msg}`);
       } finally {
@@ -276,8 +278,8 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         );
         if (signal?.aborted) return;
         setBudgetTradeoffAdvice(tradeoff);
-      } catch (err: any) {
-        if (err.name === 'AbortError' || signal?.aborted) return;
+      } catch (err: unknown) {
+        if ((err instanceof Error && err.name === 'AbortError') || signal?.aborted) return;
         console.warn('AI budget tradeoff evaluation error:', err);
       }
     },

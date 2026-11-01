@@ -46,7 +46,9 @@ export const OnboardingWizard: React.FC = () => {
   // Targeted follow-up questions from AI
   const [followUpQuestions, setFollowUpQuestions] = useState<string[]>([]);
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<number, string>>({});
-  const [recommendations, setRecommendations] = useState<any>(null);
+  const [recommendations, setRecommendations] = useState<
+    api.ParsedProfileResult['recommendations'] | null
+  >(null);
 
   // Wizard step state
   const [step, setStep] = useState<number>(1);
@@ -80,7 +82,7 @@ export const OnboardingWizard: React.FC = () => {
   ]);
 
   // Helper to merge parsed profile into wizard state without overwriting confirmed fields
-  const applyParsedProfile = (parsed: any, isReparse = false) => {
+  const applyParsedProfile = (parsed: api.ParsedProfileResult, isReparse = false) => {
     if (!isReparse) {
       if (parsed.occasion) setOccasion(parsed.occasion);
       if (parsed.title) setTitle(parsed.title);
@@ -190,7 +192,7 @@ export const OnboardingWizard: React.FC = () => {
       .map((s) => s.trim())
       .filter(Boolean),
     priorities: selectedPriorities as [string, string, string],
-    recommendations
+    recommendations: recommendations ?? undefined
   });
 
   // Explicit structured re-parse when user answers follow-up questions
@@ -206,8 +208,12 @@ export const OnboardingWizard: React.FC = () => {
       const existing = getConfirmedProfileContext();
       const reparsed = await api.parseProfileFromFreeText(combined, existing);
       applyParsedProfile(reparsed, true);
-    } catch (err: any) {
-      setParseError(err.message || 'Failed to re-parse clarifications with AI.');
+    } catch (err: unknown) {
+      setParseError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Failed to re-parse clarifications with AI.'
+      );
     } finally {
       setIsParsingAi(false);
     }
@@ -235,6 +241,11 @@ export const OnboardingWizard: React.FC = () => {
 
       if (!parsed.followUpQuestions || parsed.followUpQuestions.length === 0) {
         // If parsed cleanly with no ambiguities, directly initialize!
+        const fallbackPriorities: [string, string, string] = [
+          selectedPriorities[0] || 'Catering & Dining',
+          selectedPriorities[1] || 'Photography & Cinematic Video',
+          selectedPriorities[2] || 'Decor, Mandap & Lighting'
+        ];
         const profile: EventProfile = {
           occasion: parsed.occasion || occasion,
           title: parsed.title || title,
@@ -247,8 +258,7 @@ export const OnboardingWizard: React.FC = () => {
           dietaryNeeds: parsed.dietaryNeeds || [dietaryNeedsText],
           accessibilityNeeds: parsed.accessibilityNeeds || [accessibilityNeedsText],
           mustHaves: parsed.mustHaves || [mustHavesText],
-          priorities:
-            (parsed.priorities as [string, string, string]) || (selectedPriorities as any),
+          priorities: (parsed.priorities as [string, string, string]) || fallbackPriorities,
           recommendations: parsed.recommendations
         };
         await initializeEvent(profile);
@@ -257,9 +267,10 @@ export const OnboardingWizard: React.FC = () => {
 
       setMode('wizard');
       setStep(1);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setParseError(
-        err.message || 'Failed to parse text. Please try again or switch to the guided wizard.'
+        (err instanceof Error && err.message) ||
+          'Failed to parse text. Please try again or switch to the guided wizard.'
       );
     } finally {
       setIsParsingAi(false);
@@ -349,7 +360,7 @@ export const OnboardingWizard: React.FC = () => {
         selectedPriorities[1] || 'Decor, Mandap & Lighting',
         selectedPriorities[2] || 'Photography & Cinematic Video'
       ],
-      recommendations: finalRecs
+      recommendations: finalRecs ?? undefined
     };
 
     await initializeEvent(profile);

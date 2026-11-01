@@ -29,7 +29,9 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
   );
   const [reason, setReason] = useState<string>('Expanded family and outstation guest list');
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
-  const [evaluationResult, setEvaluationResult] = useState<any>(null);
+  const [evaluationResult, setEvaluationResult] = useState<api.DynamicChangeImpactResult | null>(
+    null
+  );
   const [evalError, setEvalError] = useState<string | null>(null);
 
   // Evaluate Change Impact Preview
@@ -41,8 +43,10 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
     try {
       const res = await api.assessDynamicChangeImpact(eventState, changeType, newValue, reason);
       setEvaluationResult(res);
-    } catch (err: any) {
-      setEvalError(err.message || 'Failed to evaluate change impact.');
+    } catch (err: unknown) {
+      setEvalError(
+        err instanceof Error && err.message ? err.message : 'Failed to evaluate change impact.'
+      );
     } finally {
       setIsEvaluating(false);
     }

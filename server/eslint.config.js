@@ -16,7 +16,7 @@ export default tseslint.config(
           varsIgnorePattern: '^_'
         }
       ],
-      '@typescript-eslint/no-explicit-any': 'off' // Handled in Step 2 per user plan
+      '@typescript-eslint/no-explicit-any': 'error'
     }
   }
 );

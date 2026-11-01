@@ -32,8 +32,10 @@ export const VendorsTab: React.FC = () => {
     try {
       const brief = await api.generateVendorBrief(eventState.profile, selectedCategory, allocated);
       saveVendorBrief(brief);
-    } catch (err: any) {
-      setBriefError(err.message || 'Failed to generate vendor brief.');
+    } catch (err: unknown) {
+      setBriefError(
+        err instanceof Error && err.message ? err.message : 'Failed to generate vendor brief.'
+      );
     } finally {
       setIsGeneratingBrief(false);
     }
@@ -65,8 +67,10 @@ export const VendorsTab: React.FC = () => {
       saveQuote(extractedQuote);
       setRawQuoteText('');
       setIsParsingQuote(false);
-    } catch (err: any) {
-      setQuoteError(err.message || 'Failed to parse quote text.');
+    } catch (err: unknown) {
+      setQuoteError(
+        err instanceof Error && err.message ? err.message : 'Failed to parse quote text.'
+      );
     } finally {
       setIsExtractingQuote(false);
     }

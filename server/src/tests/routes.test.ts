@@ -46,7 +46,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     };
 
     vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
-      mockProfileResponse as any
+      mockProfileResponse as never
     );
 
     const res = await request(app).post('/api/ai/parse-profile').send({
@@ -74,7 +74,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     };
 
     vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
-      mockExtraction as any
+      mockExtraction as never
     );
 
     const res = await request(app).post('/api/ai/extract-quote').send({
@@ -114,7 +114,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     };
 
     vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
-      mockTieredExtraction as any
+      mockTieredExtraction as never
     );
 
     const res = await request(app).post('/api/ai/extract-quote').send({
@@ -296,7 +296,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
       };
 
       vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
-        mockTradeoff as any
+        mockTradeoff as never
       );
 
       const res = await request(app).post('/api/ai/budget-tradeoffs').send({
@@ -334,7 +334,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
       };
 
       vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
-        mockDateShiftAdvice as any
+        mockDateShiftAdvice as never
       );
 
       const res = await request(app).post('/api/ai/date-shift-impact').send({
@@ -378,7 +378,9 @@ describe('API Routes Integration (with Mocked LLM)', () => {
         ]
       };
 
-      vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockBrief as any);
+      vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
+        mockBrief as never
+      );
 
       const res = await request(app).post('/api/ai/vendor-brief').send({
         eventProfile: mockValidProfile,
@@ -416,7 +418,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
       };
 
       vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
-        mockChangeAdvice as any
+        mockChangeAdvice as never
       );
 
       const res = await request(app).post('/api/ai/change-impact').send({

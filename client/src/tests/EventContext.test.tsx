@@ -98,7 +98,10 @@ describe('EventContext and Actions', () => {
 
     await act(async () => {
       try {
-        await result.current.initializeEvent({ ...mockProfile, totalBudgetINR: -1 } as any);
+        await result.current.initializeEvent({
+          ...mockProfile,
+          totalBudgetINR: -1
+        } as unknown as EventProfile);
       } catch {
         // Handled internally in hook
       }

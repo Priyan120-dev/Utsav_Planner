@@ -15,7 +15,10 @@ import {
 import { LoadingSkeleton } from '../common/LoadingSkeleton.js';
 import { ErrorAlert } from '../common/ErrorAlert.js';
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; badge: string; icon: any }> = {
+const STATUS_CONFIG: Record<
+  TaskStatus,
+  { label: string; badge: string; icon: React.ComponentType<{ className?: string }> }
+> = {
   done: {
     label: 'Done',
     badge: 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -50,7 +53,7 @@ export const TimelineTab: React.FC = () => {
     eventState ? eventState.timeline.eventDate : ''
   );
   const [isDateShifting, setIsDateShifting] = useState<boolean>(false);
-  const [dateShiftResult, setDateShiftResult] = useState<any>(null);
+  const [dateShiftResult, setDateShiftResult] = useState<api.DateShiftImpactResult | null>(null);
   const [shiftError, setShiftError] = useState<string | null>(null);
 
   const handleSimulateDateShift = async () => {
@@ -62,8 +65,10 @@ export const TimelineTab: React.FC = () => {
     try {
       const res = await api.analyzeDateShiftImpact(eventState, newSimulatedDate);
       setDateShiftResult(res);
-    } catch (err: any) {
-      setShiftError(err.message || 'Failed to simulate date shift impact.');
+    } catch (err: unknown) {
+      setShiftError(
+        err instanceof Error && err.message ? err.message : 'Failed to simulate date shift impact.'
+      );
     } finally {
       setIsDateShifting(false);
     }

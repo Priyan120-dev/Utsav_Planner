@@ -25,7 +25,7 @@ export function resetClient(): void {
 
 export interface GenerateStructuredOptions<T> {
   prompt: string;
-  schema: z.ZodType<T, any, any>;
+  schema: z.ZodType<T, z.ZodTypeDef, unknown>;
   cachePrefix?: string;
   cachePayload?: unknown;
   systemInstruction?: string;
@@ -46,11 +46,16 @@ export interface ClassifiedGeminiError {
  * Separates 404 model-not-found, 429 quota, 401/403 auth, timeout, and invalid JSON.
  * Ensures server logs contain no secrets (e.g. API keys).
  */
-export function classifyGeminiError(err: any, modelName: string): ClassifiedGeminiError {
-  const status = Number(err?.status ?? err?.statusCode ?? err?.code ?? err?.error?.code);
-  const msg = String(err?.message ?? err?.error?.message ?? err ?? '');
-  const name = String(err?.name ?? '');
-  const code = String(err?.code ?? '');
+export function classifyGeminiError(err: unknown, modelName: string): ClassifiedGeminiError {
+  const errObj = typeof err === 'object' && err !== null ? (err as Record<string, unknown>) : null;
+  const errError =
+    typeof errObj?.error === 'object' && errObj?.error !== null
+      ? (errObj.error as Record<string, unknown>)
+      : null;
+  const status = Number(errObj?.status ?? errObj?.statusCode ?? errObj?.code ?? errError?.code);
+  const msg = String(errObj?.message ?? errError?.message ?? err ?? '');
+  const name = String(errObj?.name ?? '');
+  const code = String(errObj?.code ?? '');
 
   // 1. 404 Model Not Found / Unsupported
   if (
@@ -174,7 +179,7 @@ export async function generateStructuredContent<T>(
   const client = getClient();
   const modelName = config.GEMINI_MODEL || 'gemini-3.8-flash';
 
-  const baseConfig: any = {
+  const baseConfig: Record<string, unknown> = {
     systemInstruction,
     temperature,
     responseMimeType: 'application/json',
@@ -200,10 +205,11 @@ export async function generateStructuredContent<T>(
     let parsedJson: unknown;
     try {
       parsedJson = JSON.parse(cleaned);
-    } catch (parseErr: any) {
+    } catch (parseErr: unknown) {
+      const parseErrMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
       console.error('[Gemini Error Invalid JSON] Model output was not valid JSON (attempt 1):');
       console.error('Raw model response:', lastRawText);
-      console.error('JSON parse error:', parseErr.message);
+      console.error('JSON parse error:', parseErrMsg);
       retryNeeded = true;
     }
 
@@ -222,7 +228,7 @@ export async function generateStructuredContent<T>(
       console.error('Zod validation errors:', JSON.stringify(validated.error.issues, null, 2));
       retryNeeded = true;
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     const classified = classifyGeminiError(err, modelName);
     console.error(classified.serverLog);
 
@@ -263,10 +269,11 @@ Please regenerate the response adhering strictly to the schema rules. Output ONL
     let parsedJson: unknown;
     try {
       parsedJson = JSON.parse(cleaned);
-    } catch (parseErr: any) {
+    } catch (parseErr: unknown) {
+      const parseErrMsg = parseErr instanceof Error ? parseErr.message : String(parseErr);
       console.error('[Gemini Error Invalid JSON] Model output was not valid JSON after retry:');
       console.error('Raw model response:', retryRawText);
-      console.error('JSON parse error:', parseErr.message);
+      console.error('JSON parse error:', parseErrMsg);
       throw new Error(
         'The AI assistant was unable to format its response correctly. Please try again or refine your input.'
       );
@@ -286,13 +293,14 @@ Please regenerate the response adhering strictly to the schema rules. Output ONL
     throw new Error(
       'The AI assistant was unable to format its response correctly. Please try again or refine your input.'
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     const classified = classifyGeminiError(error, modelName);
+    const errorMsg = error instanceof Error ? error.message : '';
     // If it's already one of our friendly client messages, rethrow it directly
     if (
-      error.message ===
+      errorMsg ===
         'The AI assistant was unable to format its response correctly. Please try again or refine your input.' ||
-      error.message === classified.clientMessage
+      errorMsg === classified.clientMessage
     ) {
       throw error;
     }

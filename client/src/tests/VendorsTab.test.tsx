@@ -120,7 +120,7 @@ describe('VendorsTab Component', () => {
 
     const generateSpy = vi
       .spyOn(api, 'generateVendorBrief')
-      .mockResolvedValueOnce(venueBrief as any);
+      .mockResolvedValueOnce(venueBrief as never);
 
     render(
       <EventProvider>

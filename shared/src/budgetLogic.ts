@@ -200,7 +200,7 @@ export function initializeBudgetState(
   expectedGuests: number
 ): BudgetState {
   const percentages = computeCategoryPercentages(occasion, priorities);
-  const categories: Record<BudgetCategory, BudgetCategoryItem> = {} as any;
+  const categories = {} as Record<BudgetCategory, BudgetCategoryItem>;
   let totalAllocatedINR = 0;
 
   for (const cat of BUDGET_CATEGORIES) {
@@ -266,7 +266,7 @@ export function rebalanceBudget(
     0
   );
 
-  const updatedPercentages: Record<BudgetCategory, number> = {} as any;
+  const updatedPercentages = {} as Record<BudgetCategory, number>;
   updatedPercentages[targetCategory] = clampedPct;
 
   let assignedOtherSum = 0;
@@ -311,7 +311,7 @@ export function rebalanceBudget(
   }
 
   // Rebuild category items
-  const newCategories: Record<BudgetCategory, BudgetCategoryItem> = {} as any;
+  const newCategories = {} as Record<BudgetCategory, BudgetCategoryItem>;
   let totalAllocatedINR = 0;
   for (const cat of BUDGET_CATEGORIES) {
     const pct = updatedPercentages[cat];
@@ -356,7 +356,7 @@ export function recalculateBudgetForParameters(
   newTotalBudgetINR: number,
   newGuestCount: number
 ): BudgetState {
-  const newCategories: Record<BudgetCategory, BudgetCategoryItem> = {} as any;
+  const newCategories = {} as Record<BudgetCategory, BudgetCategoryItem>;
 
   for (const cat of BUDGET_CATEGORIES) {
     const item = currentBudget.categories[cat];

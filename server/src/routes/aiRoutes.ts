@@ -57,9 +57,11 @@ aiRouter.post('/parse-profile', async (req: Request, res: Response): Promise<voi
     });
 
     res.json(parsedData);
-  } catch (error: any) {
-    console.error('Error in /parse-profile:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to parse celebration profile' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to parse celebration profile';
+    console.error('Error in /parse-profile:', message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -95,9 +97,11 @@ aiRouter.post('/budget-tradeoffs', async (req: Request, res: Response): Promise<
     });
 
     res.json(tradeoffData);
-  } catch (error: any) {
-    console.error('Error in /budget-tradeoffs:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to evaluate budget trade-off' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to evaluate budget trade-off';
+    console.error('Error in /budget-tradeoffs:', message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -145,9 +149,11 @@ aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<vo
       tasks: evaluatedTasks,
       hasCycles
     });
-  } catch (error: any) {
-    console.error('Error in /generate-tasks:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to generate timeline tasks' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to generate timeline tasks';
+    console.error('Error in /generate-tasks:', message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -212,9 +218,11 @@ aiRouter.post('/date-shift-impact', async (req: Request, res: Response): Promise
       daysShifted,
       advice
     });
-  } catch (error: any) {
-    console.error('Error in /date-shift-impact:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to evaluate date shift impact' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to evaluate date shift impact';
+    console.error('Error in /date-shift-impact:', message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -252,11 +260,11 @@ aiRouter.post('/vendor-brief', async (req: Request, res: Response): Promise<void
       category,
       ...briefData
     });
-  } catch (error: any) {
-    console.error('Error in /vendor-brief:', error.message);
-    res
-      .status(500)
-      .json({ error: error.message || 'Failed to generate vendor requirements brief' });
+  } catch (error: unknown) {
+    const message =
+      (error instanceof Error && error.message) || 'Failed to generate vendor requirements brief';
+    console.error('Error in /vendor-brief:', message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -293,9 +301,10 @@ aiRouter.post('/extract-quote', async (req: Request, res: Response): Promise<voi
     const normalizedQuote = createNormalizedQuote(extraction, category, guestCount);
 
     res.json(normalizedQuote);
-  } catch (error: any) {
-    console.error('Error in /extract-quote:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to extract vendor quote' });
+  } catch (error: unknown) {
+    const message = (error instanceof Error && error.message) || 'Failed to extract vendor quote';
+    console.error('Error in /extract-quote:', message);
+    res.status(500).json({ error: message });
   }
 });
 
@@ -367,8 +376,9 @@ aiRouter.post('/change-impact', async (req: Request, res: Response): Promise<voi
       updatedTimeline,
       advice
     });
-  } catch (error: any) {
-    console.error('Error in /change-impact:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to analyze change impact' });
+  } catch (error: unknown) {
+    const message = (error instanceof Error && error.message) || 'Failed to analyze change impact';
+    console.error('Error in /change-impact:', message);
+    res.status(500).json({ error: message });
   }
 });
