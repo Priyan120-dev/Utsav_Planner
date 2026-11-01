@@ -173,12 +173,12 @@ export function evaluateTaskStatuses(
   currentDateIso: string = new Date().toISOString().split('T')[0]
 ): TaskItem[] {
   const criticalPathSet = new Set(computeCriticalPath(tasks));
-  const doneSet = new Set(tasks.filter(t => t.status === 'done').map(t => t.id));
+  const doneSet = new Set(tasks.filter((t) => t.status === 'done').map((t) => t.id));
 
-  return tasks.map(task => {
+  return tasks.map((task) => {
     // Check if all prerequisites are done
     const prereqs = task.dependsOn || [];
-    const allPrereqsDone = prereqs.every(id => doneSet.has(id));
+    const allPrereqsDone = prereqs.every((id) => doneSet.has(id));
 
     let status: TaskStatus = task.status;
     if (status !== 'done') {
@@ -192,7 +192,7 @@ export function evaluateTaskStatuses(
     // Compute targetDate if missing or out of sync
     const targetDate = subtractDays(eventDate, task.daysBeforeEvent);
     const diffToToday = daysDiff(targetDate, currentDateIso);
-    
+
     const isOverdue = status !== 'done' && diffToToday < 0;
     const isAtRisk = status !== 'done' && !isOverdue && diffToToday <= 3;
     const isCriticalPath = criticalPathSet.has(task.id);
@@ -224,7 +224,7 @@ export function shiftTimelineDate(
   const previousDate = timeline.eventDate;
   const daysShifted = daysDiff(newEventDate, previousDate);
 
-  const recomputedTasks = timeline.tasks.map(t => {
+  const recomputedTasks = timeline.tasks.map((t) => {
     const newTargetDate = subtractDays(newEventDate, t.daysBeforeEvent);
     return {
       ...t,
@@ -234,8 +234,8 @@ export function shiftTimelineDate(
 
   const evaluated = evaluateTaskStatuses(recomputedTasks, newEventDate, currentDateIso);
   const unrealisticTaskIds = evaluated
-    .filter(t => t.status !== 'done' && daysDiff(t.targetDate, currentDateIso) < 0)
-    .map(t => t.id);
+    .filter((t) => t.status !== 'done' && daysDiff(t.targetDate, currentDateIso) < 0)
+    .map((t) => t.id);
 
   const criticalPathTaskIds = computeCriticalPath(evaluated);
 

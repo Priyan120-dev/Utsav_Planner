@@ -69,7 +69,9 @@ describe('client api service', () => {
       json: async () => ({ error: 'Custom error from server' })
     });
 
-    await expect(parseProfileFromFreeText('test prompt')).rejects.toThrow('Custom error from server');
+    await expect(parseProfileFromFreeText('test prompt')).rejects.toThrow(
+      'Custom error from server'
+    );
   });
 
   it('handles non-ok response with non-json fallback message', async () => {
@@ -93,13 +95,20 @@ describe('client api service', () => {
     global.fetch = fetchMock;
 
     const controller = new AbortController();
-    const result = await parseProfileFromFreeText('Royal wedding description', { city: 'Jaipur' }, controller.signal);
+    const result = await parseProfileFromFreeText(
+      'Royal wedding description',
+      { city: 'Jaipur' },
+      controller.signal
+    );
 
     expect(result).toEqual(mockResponse);
     expect(fetchMock).toHaveBeenCalledWith('/api/ai/parse-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ freeText: 'Royal wedding description', existingProfile: { city: 'Jaipur' } }),
+      body: JSON.stringify({
+        freeText: 'Royal wedding description',
+        existingProfile: { city: 'Jaipur' }
+      }),
       signal: controller.signal
     });
   });
@@ -118,10 +127,17 @@ describe('client api service', () => {
 
     const result = await getBudgetTradeoffAdvice(mockEventState, 'catering', 35);
     expect(result).toEqual(mockAdvice);
-    expect(fetchMock).toHaveBeenCalledWith('/api/ai/budget-tradeoffs', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ eventState: mockEventState, categoryAdjusted: 'catering', newPercentage: 35 })
-    }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/ai/budget-tradeoffs',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          eventState: mockEventState,
+          categoryAdjusted: 'catering',
+          newPercentage: 35
+        })
+      })
+    );
   });
 
   it('calls generateTimelineTasks correctly', async () => {
@@ -134,14 +150,20 @@ describe('client api service', () => {
 
     const result = await generateTimelineTasks(mockProfile);
     expect(result).toEqual(mockTasks);
-    expect(fetchMock).toHaveBeenCalledWith('/api/ai/generate-tasks', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ eventProfile: mockProfile })
-    }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/ai/generate-tasks',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ eventProfile: mockProfile })
+      })
+    );
   });
 
   it('calls analyzeDateShiftImpact correctly', async () => {
-    const mockShift = { daysShifted: -14, advice: { compressionAdvice: 'Compress decor timeline' } };
+    const mockShift = {
+      daysShifted: -14,
+      advice: { compressionAdvice: 'Compress decor timeline' }
+    };
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => mockShift
@@ -150,10 +172,13 @@ describe('client api service', () => {
 
     const result = await analyzeDateShiftImpact(mockEventState, '2026-11-17');
     expect(result).toEqual(mockShift);
-    expect(fetchMock).toHaveBeenCalledWith('/api/ai/date-shift-impact', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ eventState: mockEventState, newEventDate: '2026-11-17' })
-    }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/ai/date-shift-impact',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ eventState: mockEventState, newEventDate: '2026-11-17' })
+      })
+    );
   });
 
   it('calls generateVendorBrief correctly', async () => {
@@ -175,10 +200,17 @@ describe('client api service', () => {
 
     const result = await generateVendorBrief(mockProfile, 'catering', 600000);
     expect(result).toEqual(mockBrief);
-    expect(fetchMock).toHaveBeenCalledWith('/api/ai/vendor-brief', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ eventProfile: mockProfile, category: 'catering', allocatedBudgetINR: 600000 })
-    }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/ai/vendor-brief',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          eventProfile: mockProfile,
+          category: 'catering',
+          allocatedBudgetINR: 600000
+        })
+      })
+    );
   });
 
   it('calls extractVendorQuote correctly', async () => {
@@ -197,10 +229,17 @@ describe('client api service', () => {
 
     const result = await extractVendorQuote('Royal Caterers estimate: Rs 150,000', 'catering', 200);
     expect(result).toEqual(mockQuote);
-    expect(fetchMock).toHaveBeenCalledWith('/api/ai/extract-quote', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ rawText: 'Royal Caterers estimate: Rs 150,000', category: 'catering', guestCount: 200 })
-    }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/ai/extract-quote',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          rawText: 'Royal Caterers estimate: Rs 150,000',
+          category: 'catering',
+          guestCount: 200
+        })
+      })
+    );
   });
 
   it('calls assessDynamicChangeImpact correctly', async () => {
@@ -215,11 +254,24 @@ describe('client api service', () => {
     });
     global.fetch = fetchMock;
 
-    const result = await assessDynamicChangeImpact(mockEventState, 'guests', 250, 'More family arriving');
+    const result = await assessDynamicChangeImpact(
+      mockEventState,
+      'guests',
+      250,
+      'More family arriving'
+    );
     expect(result).toEqual(mockChange);
-    expect(fetchMock).toHaveBeenCalledWith('/api/ai/change-impact', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ eventState: mockEventState, changeType: 'guests', newValue: 250, reason: 'More family arriving' })
-    }));
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/ai/change-impact',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({
+          eventState: mockEventState,
+          changeType: 'guests',
+          newValue: 250,
+          reason: 'More family arriving'
+        })
+      })
+    );
   });
 });

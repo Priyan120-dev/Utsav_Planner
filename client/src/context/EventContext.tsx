@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  ReactNode
+} from 'react';
 import {
   EventState,
   EventProfile,
@@ -25,9 +32,17 @@ interface EventContextType {
   announce: (message: string) => void;
   clearError: () => void;
   initializeEvent: (profile: EventProfile) => Promise<void>;
-  updateSliderPercentage: (category: BudgetCategory, newPercentage: number, signal?: AbortSignal) => Promise<void>;
+  updateSliderPercentage: (
+    category: BudgetCategory,
+    newPercentage: number,
+    signal?: AbortSignal
+  ) => Promise<void>;
   rebalanceCategoryBudget: (category: BudgetCategory, newPercentage: number) => void;
-  setBudgetTradeoffAdvice: (tradeoff: { explanation: string; actionableOptions: string[]; disclaimer: string }) => void;
+  setBudgetTradeoffAdvice: (tradeoff: {
+    explanation: string;
+    actionableOptions: string[];
+    disclaimer: string;
+  }) => void;
   toggleTaskStatus: (taskId: string) => void;
   saveVendorBrief: (brief: VendorBrief & { category: BudgetCategory }) => void;
   saveQuote: (quote: QuoteItem) => void;
@@ -84,191 +99,200 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   /**
    * Initializes a new EventState from an EventProfile
    */
-  const initializeEvent = useCallback(async (profile: EventProfile) => {
-    setIsLoading(true);
-    setError(null);
+  const initializeEvent = useCallback(
+    async (profile: EventProfile) => {
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      // 1. Pure code computes budget distribution and per-head math
-      const initialBudget = initializeBudgetState(
-        profile.totalBudgetINR,
-        profile.occasion,
-        profile.priorities,
-        profile.expectedGuests
-      );
-
-      // 2. Call AI service to generate sequenced tasks with dependencies
-      let initialTasks: TaskItem[] = [];
       try {
-        const tasksRes = await api.generateTimelineTasks(profile);
-        initialTasks = tasksRes.tasks || [];
+        // 1. Pure code computes budget distribution and per-head math
+        const initialBudget = initializeBudgetState(
+          profile.totalBudgetINR,
+          profile.occasion,
+          profile.priorities,
+          profile.expectedGuests
+        );
+
+        // 2. Call AI service to generate sequenced tasks with dependencies
+        let initialTasks: TaskItem[] = [];
+        try {
+          const tasksRes = await api.generateTimelineTasks(profile);
+          initialTasks = tasksRes.tasks || [];
+        } catch (err: any) {
+          console.warn(
+            'Task generation failed or skipped, creating fallback starter tasks:',
+            err.message
+          );
+          // Fallback core foundation tasks
+          initialTasks = [
+            {
+              id: 'task_venue',
+              title: `Book auspicious ${profile.occasion} venue in ${profile.city}`,
+              category: 'venue',
+              daysBeforeEvent: 90,
+              targetDate: '',
+              priority: 'critical',
+              dependsOn: [],
+              status: 'ready'
+            },
+            {
+              id: 'task_caterer',
+              title: 'Finalize catering menu and dietary tasting counters',
+              category: 'catering',
+              daysBeforeEvent: 60,
+              targetDate: '',
+              priority: 'high',
+              dependsOn: ['task_venue'],
+              status: 'locked'
+            },
+            {
+              id: 'task_decor',
+              title: `Approve decor & lighting theme (${profile.atmosphereTheme})`,
+              category: 'decor',
+              daysBeforeEvent: 45,
+              targetDate: '',
+              priority: 'high',
+              dependsOn: ['task_venue'],
+              status: 'locked'
+            },
+            {
+              id: 'task_invites',
+              title: 'Send digital and printed invitations to guests',
+              category: 'invitations',
+              daysBeforeEvent: 30,
+              targetDate: '',
+              priority: 'medium',
+              dependsOn: ['task_venue'],
+              status: 'locked'
+            }
+          ];
+        }
+
+        // Evaluate locks and target dates with pure logic
+        const evaluatedTasks = evaluateTaskStatuses(initialTasks, profile.eventDate);
+
+        const newState: EventState = {
+          version: 1,
+          id: `utsav_${Date.now()}`,
+          profile,
+          budget: initialBudget,
+          timeline: {
+            tasks: evaluatedTasks,
+            eventDate: profile.eventDate,
+            hasCycles: false,
+            criticalPathTaskIds: []
+          },
+          vendorBriefs: {},
+          quotes: [],
+          changeLog: [
+            {
+              id: `log_${Date.now()}`,
+              timestamp: new Date().toISOString(),
+              fieldChanged: 'custom',
+              previousValue: null,
+              newValue: 'Created event plan',
+              reason: 'Initial setup',
+              impactSummary: `Initialized ${profile.occasion} celebration plan with ₹${profile.totalBudgetINR.toLocaleString('en-IN')} budget.`
+            }
+          ],
+          lastUpdated: new Date().toISOString()
+        };
+
+        setEventState(newState);
+        announce(`Event initialized with ${evaluatedTasks.length} timeline tasks generated.`);
       } catch (err: any) {
-        console.warn('Task generation failed or skipped, creating fallback starter tasks:', err.message);
-        // Fallback core foundation tasks
-        initialTasks = [
-          {
-            id: 'task_venue',
-            title: `Book auspicious ${profile.occasion} venue in ${profile.city}`,
-            category: 'venue',
-            daysBeforeEvent: 90,
-            targetDate: '',
-            priority: 'critical',
-            dependsOn: [],
-            status: 'ready'
-          },
-          {
-            id: 'task_caterer',
-            title: 'Finalize catering menu and dietary tasting counters',
-            category: 'catering',
-            daysBeforeEvent: 60,
-            targetDate: '',
-            priority: 'high',
-            dependsOn: ['task_venue'],
-            status: 'locked'
-          },
-          {
-            id: 'task_decor',
-            title: `Approve decor & lighting theme (${profile.atmosphereTheme})`,
-            category: 'decor',
-            daysBeforeEvent: 45,
-            targetDate: '',
-            priority: 'high',
-            dependsOn: ['task_venue'],
-            status: 'locked'
-          },
-          {
-            id: 'task_invites',
-            title: 'Send digital and printed invitations to guests',
-            category: 'invitations',
-            daysBeforeEvent: 30,
-            targetDate: '',
-            priority: 'medium',
-            dependsOn: ['task_venue'],
-            status: 'locked'
-          }
-        ];
+        const msg = err.message || 'Failed to initialize event.';
+        setError(msg);
+        announce(`Error: ${msg}`);
+      } finally {
+        setIsLoading(false);
       }
-
-      // Evaluate locks and target dates with pure logic
-      const evaluatedTasks = evaluateTaskStatuses(initialTasks, profile.eventDate);
-
-      const newState: EventState = {
-        version: 1,
-        id: `utsav_${Date.now()}`,
-        profile,
-        budget: initialBudget,
-        timeline: {
-          tasks: evaluatedTasks,
-          eventDate: profile.eventDate,
-          hasCycles: false,
-          criticalPathTaskIds: []
-        },
-        vendorBriefs: {},
-        quotes: [],
-        changeLog: [
-          {
-            id: `log_${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            fieldChanged: 'custom',
-            previousValue: null,
-            newValue: 'Created event plan',
-            reason: 'Initial setup',
-            impactSummary: `Initialized ${profile.occasion} celebration plan with ₹${profile.totalBudgetINR.toLocaleString('en-IN')} budget.`
-          }
-        ],
-        lastUpdated: new Date().toISOString()
-      };
-
-      setEventState(newState);
-      announce(`Event initialized with ${evaluatedTasks.length} timeline tasks generated.`);
-    } catch (err: any) {
-      const msg = err.message || 'Failed to initialize event.';
-      setError(msg);
-      announce(`Error: ${msg}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [announce]);
+    },
+    [announce]
+  );
 
   /**
    * Synchronous pure rebalancing: instantly updates all categories,
    * donut chart slices, per-guest amounts, and safety buffer with zero debounce.
    */
-  const rebalanceCategoryBudget = useCallback((
-    category: BudgetCategory,
-    newPercentage: number
-  ) => {
-    setEventState(current => {
-      if (!current) return null;
-      const rebalancedBudget = rebalanceBudget(
-        current.budget,
-        category,
-        newPercentage,
-        current.profile.expectedGuests
-      );
-      return {
-        ...current,
-        budget: rebalancedBudget,
-        lastUpdated: new Date().toISOString()
-      };
-    });
-    announce(`Budget rebalanced for ${category}.`);
-  }, [announce]);
+  const rebalanceCategoryBudget = useCallback(
+    (category: BudgetCategory, newPercentage: number) => {
+      setEventState((current) => {
+        if (!current) return null;
+        const rebalancedBudget = rebalanceBudget(
+          current.budget,
+          category,
+          newPercentage,
+          current.profile.expectedGuests
+        );
+        return {
+          ...current,
+          budget: rebalancedBudget,
+          lastUpdated: new Date().toISOString()
+        };
+      });
+      announce(`Budget rebalanced for ${category}.`);
+    },
+    [announce]
+  );
 
   /**
    * Updates lastAiTradeoff in state
    */
-  const setBudgetTradeoffAdvice = useCallback((tradeoff: {
-    explanation: string;
-    actionableOptions: string[];
-    disclaimer: string;
-  }) => {
-    setEventState(current => {
-      if (!current) return null;
-      return {
-        ...current,
-        budget: {
-          ...current.budget,
-          lastAiTradeoff: tradeoff
-        }
-      };
-    });
-  }, []);
+  const setBudgetTradeoffAdvice = useCallback(
+    (tradeoff: { explanation: string; actionableOptions: string[]; disclaimer: string }) => {
+      setEventState((current) => {
+        if (!current) return null;
+        return {
+          ...current,
+          budget: {
+            ...current.budget,
+            lastAiTradeoff: tradeoff
+          }
+        };
+      });
+    },
+    []
+  );
 
   /**
    * Interactive slider update: pure code instantly rebalances deltas,
    * then calls AI service to fetch trade-off explanation and options.
    */
-  const updateSliderPercentage = useCallback(async (
-    category: BudgetCategory,
-    newPercentage: number,
-    signal?: AbortSignal
-  ) => {
-    if (!eventState) return;
+  const updateSliderPercentage = useCallback(
+    async (category: BudgetCategory, newPercentage: number, signal?: AbortSignal) => {
+      if (!eventState) return;
 
-    // 1. Instant pure arithmetic rebalancing
-    rebalanceCategoryBudget(category, newPercentage);
+      // 1. Instant pure arithmetic rebalancing
+      rebalanceCategoryBudget(category, newPercentage);
 
-    // 2. Fetch AI trade-off analysis
-    try {
-      const tradeoff = await api.getBudgetTradeoffAdvice(eventState, category, newPercentage, signal);
-      if (signal?.aborted) return;
-      setBudgetTradeoffAdvice(tradeoff);
-    } catch (err: any) {
-      if (err.name === 'AbortError' || signal?.aborted) return;
-      console.warn('AI budget tradeoff evaluation error:', err);
-    }
-  }, [eventState, rebalanceCategoryBudget, setBudgetTradeoffAdvice]);
+      // 2. Fetch AI trade-off analysis
+      try {
+        const tradeoff = await api.getBudgetTradeoffAdvice(
+          eventState,
+          category,
+          newPercentage,
+          signal
+        );
+        if (signal?.aborted) return;
+        setBudgetTradeoffAdvice(tradeoff);
+      } catch (err: any) {
+        if (err.name === 'AbortError' || signal?.aborted) return;
+        console.warn('AI budget tradeoff evaluation error:', err);
+      }
+    },
+    [eventState, rebalanceCategoryBudget, setBudgetTradeoffAdvice]
+  );
 
   /**
    * Toggles task status (ready -> in_progress -> done)
    * and automatically unlocks dependent tasks using pure logic
    */
   const toggleTaskStatus = useCallback((taskId: string) => {
-    setEventState(current => {
+    setEventState((current) => {
       if (!current) return null;
 
-      const nextTasks = current.timeline.tasks.map(t => {
+      const nextTasks = current.timeline.tasks.map((t) => {
         if (t.id === taskId) {
           let nextStatus = t.status;
           if (t.status === 'ready') nextStatus = 'in_progress';
@@ -297,7 +321,7 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
    * Saves a generated vendor brief for a category
    */
   const saveVendorBrief = useCallback((brief: VendorBrief & { category: BudgetCategory }) => {
-    setEventState(current => {
+    setEventState((current) => {
       if (!current) return null;
       return {
         ...current,
@@ -313,81 +337,97 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   /**
    * Saves an extracted quote with computed TCO
    */
-  const saveQuote = useCallback((quote: QuoteItem) => {
-    setEventState(current => {
-      if (!current) return null;
-      return {
-        ...current,
-        quotes: [quote, ...current.quotes],
-        lastUpdated: new Date().toISOString()
-      };
-    });
-    announce(`Vendor quote parsed and saved for ${quote.vendorName}.`);
-  }, [announce]);
+  const saveQuote = useCallback(
+    (quote: QuoteItem) => {
+      setEventState((current) => {
+        if (!current) return null;
+        return {
+          ...current,
+          quotes: [quote, ...current.quotes],
+          lastUpdated: new Date().toISOString()
+        };
+      });
+      announce(`Vendor quote parsed and saved for ${quote.vendorName}.`);
+    },
+    [announce]
+  );
 
   /**
    * Commits a dynamic in-flight change to budget, guests, or date,
    * deterministically recomputing values and logging to changeLog.
    */
-  const commitDynamicChange = useCallback((
-    changeType: 'budget' | 'guests' | 'date',
-    newValue: string | number,
-    reason: string,
-    impactSummary: string
-  ) => {
-    setEventState(current => {
-      if (!current) return null;
+  const commitDynamicChange = useCallback(
+    (
+      changeType: 'budget' | 'guests' | 'date',
+      newValue: string | number,
+      reason: string,
+      impactSummary: string
+    ) => {
+      setEventState((current) => {
+        if (!current) return null;
 
-      let prevVal: unknown = null;
-      let newProfile = { ...current.profile };
-      let newBudget = { ...current.budget };
-      let newTimeline = { ...current.timeline };
+        let prevVal: unknown = null;
+        const newProfile = { ...current.profile };
+        let newBudget = { ...current.budget };
+        const newTimeline = { ...current.timeline };
 
-      if (changeType === 'budget') {
-        prevVal = current.profile.totalBudgetINR;
-        const num = Number(newValue);
-        newProfile.totalBudgetINR = num;
-        newBudget = recalculateBudgetForParameters(current.budget, num, current.profile.expectedGuests);
-      } else if (changeType === 'guests') {
-        prevVal = current.profile.expectedGuests;
-        const num = Number(newValue);
-        newProfile.expectedGuests = num;
-        newBudget = recalculateBudgetForParameters(current.budget, current.profile.totalBudgetINR, num);
-      } else if (changeType === 'date') {
-        prevVal = current.profile.eventDate;
-        const dateStr = String(newValue);
-        newProfile.eventDate = dateStr;
-        newTimeline.eventDate = dateStr;
-        newTimeline.tasks = evaluateTaskStatuses(current.timeline.tasks, dateStr);
-      }
+        if (changeType === 'budget') {
+          prevVal = current.profile.totalBudgetINR;
+          const num = Number(newValue);
+          newProfile.totalBudgetINR = num;
+          newBudget = recalculateBudgetForParameters(
+            current.budget,
+            num,
+            current.profile.expectedGuests
+          );
+        } else if (changeType === 'guests') {
+          prevVal = current.profile.expectedGuests;
+          const num = Number(newValue);
+          newProfile.expectedGuests = num;
+          newBudget = recalculateBudgetForParameters(
+            current.budget,
+            current.profile.totalBudgetINR,
+            num
+          );
+        } else if (changeType === 'date') {
+          prevVal = current.profile.eventDate;
+          const dateStr = String(newValue);
+          newProfile.eventDate = dateStr;
+          newTimeline.eventDate = dateStr;
+          newTimeline.tasks = evaluateTaskStatuses(current.timeline.tasks, dateStr);
+        }
 
-      const logEntry: ChangeLogEntry = {
-        id: `change_${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        fieldChanged: changeType,
-        previousValue: prevVal,
-        newValue,
-        reason,
-        impactSummary
-      };
+        const logEntry: ChangeLogEntry = {
+          id: `change_${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          fieldChanged: changeType,
+          previousValue: prevVal,
+          newValue,
+          reason,
+          impactSummary
+        };
 
-      return {
-        ...current,
-        profile: newProfile,
-        budget: newBudget,
-        timeline: newTimeline,
-        changeLog: [logEntry, ...current.changeLog],
-        lastUpdated: new Date().toISOString()
-      };
-    });
-    announce(`In-flight change applied to ${changeType}. ${impactSummary || 'Updated parameters.'}`);
-  }, [announce]);
+        return {
+          ...current,
+          profile: newProfile,
+          budget: newBudget,
+          timeline: newTimeline,
+          changeLog: [logEntry, ...current.changeLog],
+          lastUpdated: new Date().toISOString()
+        };
+      });
+      announce(
+        `In-flight change applied to ${changeType}. ${impactSummary || 'Updated parameters.'}`
+      );
+    },
+    [announce]
+  );
 
   /**
    * 1-Click Undo for the last changeLog entry
    */
   const undoLastChange = useCallback(() => {
-    setEventState(current => {
+    setEventState((current) => {
       if (!current || current.changeLog.length <= 1) return current;
 
       const [lastEntry, ...remainingLogs] = current.changeLog;
@@ -395,18 +435,26 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         return current;
       }
 
-      let newProfile = { ...current.profile };
+      const newProfile = { ...current.profile };
       let newBudget = { ...current.budget };
-      let newTimeline = { ...current.timeline };
+      const newTimeline = { ...current.timeline };
 
       if (lastEntry.fieldChanged === 'budget') {
         const prevBudget = Number(lastEntry.previousValue);
         newProfile.totalBudgetINR = prevBudget;
-        newBudget = recalculateBudgetForParameters(current.budget, prevBudget, current.profile.expectedGuests);
+        newBudget = recalculateBudgetForParameters(
+          current.budget,
+          prevBudget,
+          current.profile.expectedGuests
+        );
       } else if (lastEntry.fieldChanged === 'guests') {
         const prevGuests = Number(lastEntry.previousValue);
         newProfile.expectedGuests = prevGuests;
-        newBudget = recalculateBudgetForParameters(current.budget, current.profile.totalBudgetINR, prevGuests);
+        newBudget = recalculateBudgetForParameters(
+          current.budget,
+          current.profile.totalBudgetINR,
+          prevGuests
+        );
       } else if (lastEntry.fieldChanged === 'date') {
         const prevDate = String(lastEntry.previousValue);
         newProfile.eventDate = prevDate;
@@ -462,7 +510,11 @@ export const EventProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         'Cinematic Drone & 4K Wedding Film',
         'Live Shehnai and Nagada players during Barat'
       ],
-      priorities: ['Catering & Dining', 'Photography & Cinematic Video', 'Decor, Mandap & Lighting'],
+      priorities: [
+        'Catering & Dining',
+        'Photography & Cinematic Video',
+        'Decor, Mandap & Lighting'
+      ],
       recommendations: {
         themes: [
           'Rajputana Royalty: Deep crimson, antique gold & raw silk drapes',

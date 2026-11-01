@@ -16,9 +16,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
   });
 
   it('POST /api/ai/parse-profile returns 400 if freeText is too short', async () => {
-    const res = await request(app)
-      .post('/api/ai/parse-profile')
-      .send({ freeText: 'hi' });
+    const res = await request(app).post('/api/ai/parse-profile').send({ freeText: 'hi' });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Validation failed');
@@ -47,11 +45,14 @@ describe('API Routes Integration (with Mocked LLM)', () => {
       }
     };
 
-    vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockProfileResponse as any);
+    vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
+      mockProfileResponse as any
+    );
 
-    const res = await request(app)
-      .post('/api/ai/parse-profile')
-      .send({ freeText: 'Planning a big fat Punjabi wedding in Delhi in Dec 2026 for 300 guests with 18 lakhs budget.' });
+    const res = await request(app).post('/api/ai/parse-profile').send({
+      freeText:
+        'Planning a big fat Punjabi wedding in Delhi in Dec 2026 for 300 guests with 18 lakhs budget.'
+    });
 
     expect(res.status).toBe(200);
     expect(res.body.title).toBe('Aman & Priya Wedding');
@@ -65,30 +66,31 @@ describe('API Routes Integration (with Mocked LLM)', () => {
       guestCapacity: null,
       inclusions: ['Canopy tents', 'Stage lighting'],
       exclusions: ['Carpeting'],
-      additionalChargesBreakdown: [
-        { item: 'Overtime setup', amountINR: 15000 }
-      ],
+      additionalChargesBreakdown: [{ item: 'Overtime setup', amountINR: 15000 }],
       paymentTerms: '50% advance',
       cancellationPolicy: null,
       missingInfo: ['No details on sound permissions'],
       redFlags: []
     };
 
-    vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockExtraction as any);
+    vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
+      mockExtraction as any
+    );
 
-    const res = await request(app)
-      .post('/api/ai/extract-quote')
-      .send({
-        rawText: 'Quotation from Royal Tent House: Base price Rs 1,20,000 including canopy tents. Overtime setup Rs 15,000 extra. 50% advance required.',
-        category: 'decor'
-      });
+    const res = await request(app).post('/api/ai/extract-quote').send({
+      rawText:
+        'Quotation from Royal Tent House: Base price Rs 1,20,000 including canopy tents. Overtime setup Rs 15,000 extra. 50% advance required.',
+      category: 'decor'
+    });
 
     expect(res.status).toBe(200);
     expect(res.body.vendorName).toBe('Royal Tent House');
     expect(res.body.basePriceINR).toBe(120000);
     expect(res.body.additionalChargesINR).toBe(15000);
     expect(res.body.computedTotalCostINR).toBe(135000); // 120000 + 15000 computed deterministically
-    expect(res.body.availabilityDisclaimer).toBe('Availability not verified: confirm directly with vendor.');
+    expect(res.body.availabilityDisclaimer).toBe(
+      'Availability not verified: confirm directly with vendor.'
+    );
     expect(res.body.tiers).toBeNull();
   });
 
@@ -104,24 +106,23 @@ describe('API Routes Integration (with Mocked LLM)', () => {
       guestCapacity: null, // unstated
       inclusions: ['Live chaat counter', '3-course buffet'],
       exclusions: ['Mineral water bottles'],
-      additionalChargesBreakdown: [
-        { item: 'Staff gratuity', amountINR: 5000 }
-      ],
+      additionalChargesBreakdown: [{ item: 'Staff gratuity', amountINR: 5000 }],
       paymentTerms: null, // unstated
       cancellationPolicy: null, // unstated
       missingInfo: ['Payment schedule unstated'],
       redFlags: []
     };
 
-    vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockTieredExtraction as any);
+    vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
+      mockTieredExtraction as any
+    );
 
-    const res = await request(app)
-      .post('/api/ai/extract-quote')
-      .send({
-        rawText: 'Royal Feast Catering quote: Base logistics fee Rs 20,000. Up to 100 guests: Rs 1200/plate, up to 250: Rs 1000/plate. Staff gratuity Rs 5000.',
-        category: 'catering',
-        guestCount: 200
-      });
+    const res = await request(app).post('/api/ai/extract-quote').send({
+      rawText:
+        'Royal Feast Catering quote: Base logistics fee Rs 20,000. Up to 100 guests: Rs 1200/plate, up to 250: Rs 1000/plate. Staff gratuity Rs 5000.',
+      category: 'catering',
+      guestCount: 200
+    });
 
     expect(res.status).toBe(200);
     expect(res.body.vendorName).toBe('Royal Feast Catering');
@@ -135,9 +136,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
   });
 
   it('rejects disallowed CORS origins with status 403 and {"error":"Origin not allowed"}', async () => {
-    const res = await request(app)
-      .get('/api/health')
-      .set('Origin', 'http://malicious-site.com');
+    const res = await request(app).get('/api/health').set('Origin', 'http://malicious-site.com');
 
     expect(res.status).toBe(403);
     expect(res.body.error).toBe('Origin not allowed');
@@ -145,9 +144,7 @@ describe('API Routes Integration (with Mocked LLM)', () => {
 
   it('POST /api/ai/parse-profile rejects text exceeding 5000 characters', async () => {
     const overlyLongText = 'a'.repeat(5001);
-    const res = await request(app)
-      .post('/api/ai/parse-profile')
-      .send({ freeText: overlyLongText });
+    const res = await request(app).post('/api/ai/parse-profile').send({ freeText: overlyLongText });
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Validation failed');
@@ -187,16 +184,77 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     budget: {
       totalBudgetINR: 2000000,
       categories: {
-        venue: { category: 'venue', label: 'Venue & Grounds', allocatedAmountINR: 500000, percentage: 25, perGuestINR: 2500 },
-        catering: { category: 'catering', label: 'Catering & Dining', allocatedAmountINR: 600000, percentage: 30, perGuestINR: 3000 },
-        decor: { category: 'decor', label: 'Decor', allocatedAmountINR: 300000, percentage: 15, perGuestINR: 1500 },
-        photography_videography: { category: 'photography_videography', label: 'Photo/Video', allocatedAmountINR: 200000, percentage: 10, perGuestINR: 1000 },
-        entertainment: { category: 'entertainment', label: 'Music/DJ', allocatedAmountINR: 100000, percentage: 5, perGuestINR: 500 },
-        attire: { category: 'attire', label: 'Attire', allocatedAmountINR: 100000, percentage: 5, perGuestINR: 500 },
-        invitations: { category: 'invitations', label: 'Invites', allocatedAmountINR: 40000, percentage: 2, perGuestINR: 200 },
-        transport: { category: 'transport', label: 'Transport', allocatedAmountINR: 40000, percentage: 2, perGuestINR: 200 },
-        miscellaneous: { category: 'miscellaneous', label: 'Misc', allocatedAmountINR: 20000, percentage: 1, perGuestINR: 100 },
-        contingency: { category: 'contingency', label: 'Contingency', allocatedAmountINR: 100000, percentage: 5, perGuestINR: 500, isContingency: true }
+        venue: {
+          category: 'venue',
+          label: 'Venue & Grounds',
+          allocatedAmountINR: 500000,
+          percentage: 25,
+          perGuestINR: 2500
+        },
+        catering: {
+          category: 'catering',
+          label: 'Catering & Dining',
+          allocatedAmountINR: 600000,
+          percentage: 30,
+          perGuestINR: 3000
+        },
+        decor: {
+          category: 'decor',
+          label: 'Decor',
+          allocatedAmountINR: 300000,
+          percentage: 15,
+          perGuestINR: 1500
+        },
+        photography_videography: {
+          category: 'photography_videography',
+          label: 'Photo/Video',
+          allocatedAmountINR: 200000,
+          percentage: 10,
+          perGuestINR: 1000
+        },
+        entertainment: {
+          category: 'entertainment',
+          label: 'Music/DJ',
+          allocatedAmountINR: 100000,
+          percentage: 5,
+          perGuestINR: 500
+        },
+        attire: {
+          category: 'attire',
+          label: 'Attire',
+          allocatedAmountINR: 100000,
+          percentage: 5,
+          perGuestINR: 500
+        },
+        invitations: {
+          category: 'invitations',
+          label: 'Invites',
+          allocatedAmountINR: 40000,
+          percentage: 2,
+          perGuestINR: 200
+        },
+        transport: {
+          category: 'transport',
+          label: 'Transport',
+          allocatedAmountINR: 40000,
+          percentage: 2,
+          perGuestINR: 200
+        },
+        miscellaneous: {
+          category: 'miscellaneous',
+          label: 'Misc',
+          allocatedAmountINR: 20000,
+          percentage: 1,
+          perGuestINR: 100
+        },
+        contingency: {
+          category: 'contingency',
+          label: 'Contingency',
+          allocatedAmountINR: 100000,
+          percentage: 5,
+          perGuestINR: 500,
+          isContingency: true
+        }
       },
       contingencyPercent: 5,
       perGuestTotalINR: 10000
@@ -228,20 +286,24 @@ describe('API Routes Integration (with Mocked LLM)', () => {
   describe('POST /api/ai/budget-tradeoffs', () => {
     it('returns 200 and tradeoff advice on valid payload', async () => {
       const mockTradeoff = {
-        explanation: 'Increasing catering from 30% to 35% reduces decor and entertainment headroom.',
-        actionableOptions: ['Opt for seasonal flowers instead of exotic imports', 'Bundle DJ sound system with venue lighting'],
+        explanation:
+          'Increasing catering from 30% to 35% reduces decor and entertainment headroom.',
+        actionableOptions: [
+          'Opt for seasonal flowers instead of exotic imports',
+          'Bundle DJ sound system with venue lighting'
+        ],
         disclaimer: 'Estimate, not a verified vendor price.'
       };
 
-      vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockTradeoff as any);
+      vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
+        mockTradeoff as any
+      );
 
-      const res = await request(app)
-        .post('/api/ai/budget-tradeoffs')
-        .send({
-          eventState: mockValidEventState,
-          categoryAdjusted: 'catering',
-          newPercentage: 35
-        });
+      const res = await request(app).post('/api/ai/budget-tradeoffs').send({
+        eventState: mockValidEventState,
+        categoryAdjusted: 'catering',
+        newPercentage: 35
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.explanation).toBe(mockTradeoff.explanation);
@@ -250,13 +312,11 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     });
 
     it('returns 400 on invalid payload (missing eventState or invalid category)', async () => {
-      const res = await request(app)
-        .post('/api/ai/budget-tradeoffs')
-        .send({
-          eventState: {},
-          categoryAdjusted: 'not_a_valid_category',
-          newPercentage: 150
-        });
+      const res = await request(app).post('/api/ai/budget-tradeoffs').send({
+        eventState: {},
+        categoryAdjusted: 'not_a_valid_category',
+        newPercentage: 150
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Validation failed');
@@ -273,14 +333,14 @@ describe('API Routes Integration (with Mocked LLM)', () => {
         suggestedDrops: ['Custom monogram stationery']
       };
 
-      vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockDateShiftAdvice as any);
+      vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
+        mockDateShiftAdvice as any
+      );
 
-      const res = await request(app)
-        .post('/api/ai/date-shift-impact')
-        .send({
-          eventState: mockValidEventState,
-          newEventDate: '2026-11-20'
-        });
+      const res = await request(app).post('/api/ai/date-shift-impact').send({
+        eventState: mockValidEventState,
+        newEventDate: '2026-11-20'
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.updatedTimeline).toBeDefined();
@@ -290,12 +350,10 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     });
 
     it('returns 400 when newEventDate format is invalid', async () => {
-      const res = await request(app)
-        .post('/api/ai/date-shift-impact')
-        .send({
-          eventState: mockValidEventState,
-          newEventDate: '20-11-2026' // invalid format (expects YYYY-MM-DD)
-        });
+      const res = await request(app).post('/api/ai/date-shift-impact').send({
+        eventState: mockValidEventState,
+        newEventDate: '20-11-2026' // invalid format (expects YYYY-MM-DD)
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Validation failed');
@@ -322,13 +380,11 @@ describe('API Routes Integration (with Mocked LLM)', () => {
 
       vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockBrief as any);
 
-      const res = await request(app)
-        .post('/api/ai/vendor-brief')
-        .send({
-          eventProfile: mockValidProfile,
-          category: 'venue',
-          allocatedBudgetINR: 500000
-        });
+      const res = await request(app).post('/api/ai/vendor-brief').send({
+        eventProfile: mockValidProfile,
+        category: 'venue',
+        allocatedBudgetINR: 500000
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.category).toBe('venue');
@@ -337,13 +393,11 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     });
 
     it('returns 400 when body is invalid', async () => {
-      const res = await request(app)
-        .post('/api/ai/vendor-brief')
-        .send({
-          eventProfile: {},
-          category: 'invalid_category',
-          allocatedBudgetINR: -500
-        });
+      const res = await request(app).post('/api/ai/vendor-brief').send({
+        eventProfile: {},
+        category: 'invalid_category',
+        allocatedBudgetINR: -500
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Validation failed');
@@ -361,16 +415,16 @@ describe('API Routes Integration (with Mocked LLM)', () => {
         suggestedActionItems: ['Review upgraded caterer proposals', 'Expand guest welcome hampers']
       };
 
-      vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(mockChangeAdvice as any);
+      vi.spyOn(geminiService, 'generateStructuredContent').mockResolvedValueOnce(
+        mockChangeAdvice as any
+      );
 
-      const res = await request(app)
-        .post('/api/ai/change-impact')
-        .send({
-          eventState: mockValidEventState,
-          changeType: 'budget',
-          newValue: 2500000,
-          reason: 'Additional family contribution'
-        });
+      const res = await request(app).post('/api/ai/change-impact').send({
+        eventState: mockValidEventState,
+        changeType: 'budget',
+        newValue: 2500000,
+        reason: 'Additional family contribution'
+      });
 
       expect(res.status).toBe(200);
       expect(res.body.changeType).toBe('budget');
@@ -381,13 +435,11 @@ describe('API Routes Integration (with Mocked LLM)', () => {
     });
 
     it('returns 400 when changeType or payload is invalid', async () => {
-      const res = await request(app)
-        .post('/api/ai/change-impact')
-        .send({
-          eventState: {},
-          changeType: 'unsupported_change_type',
-          newValue: 'abc'
-        });
+      const res = await request(app).post('/api/ai/change-impact').send({
+        eventState: {},
+        changeType: 'unsupported_change_type',
+        newValue: 'abc'
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBe('Validation failed');

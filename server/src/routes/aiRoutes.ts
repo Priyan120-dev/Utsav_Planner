@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { 
+import {
   EventProfileSchema,
   EventStateSchema,
   TaskItem,
@@ -31,7 +31,10 @@ export const aiRouter = Router();
 
 // 1. Parse Profile from Free Text
 const ParseProfileReqSchema = z.object({
-  freeText: z.string().min(5, 'Description must be at least 5 characters').max(5000, 'Description cannot exceed 5000 characters'),
+  freeText: z
+    .string()
+    .min(5, 'Description must be at least 5 characters')
+    .max(5000, 'Description cannot exceed 5000 characters'),
   existingProfile: z.record(z.unknown()).optional()
 });
 
@@ -126,7 +129,7 @@ aiRouter.post('/generate-tasks', async (req: Request, res: Response): Promise<vo
     });
 
     // Code validation: check DAG for cycles
-    const rawTasks: TaskItem[] = generated.tasks.map(t => ({
+    const rawTasks: TaskItem[] = generated.tasks.map((t) => ({
       ...t,
       dependsOn: t.dependsOn || [],
       status: 'locked' as const,
@@ -171,8 +174,8 @@ aiRouter.post('/date-shift-impact', async (req: Request, res: Response): Promise
     );
 
     const unrealisticTitles = updatedTimeline.tasks
-      .filter(t => unrealisticTaskIds.includes(t.id))
-      .map(t => t.title);
+      .filter((t) => unrealisticTaskIds.includes(t.id))
+      .map((t) => t.title);
 
     // 2. Ask LLM for compression advice and suggested drops
     const prompt = buildDateShiftImpactPrompt(
@@ -251,13 +254,18 @@ aiRouter.post('/vendor-brief', async (req: Request, res: Response): Promise<void
     });
   } catch (error: any) {
     console.error('Error in /vendor-brief:', error.message);
-    res.status(500).json({ error: error.message || 'Failed to generate vendor requirements brief' });
+    res
+      .status(500)
+      .json({ error: error.message || 'Failed to generate vendor requirements brief' });
   }
 });
 
 // 6. Extract Structured Quote from Raw Text
 const ExtractQuoteReqSchema = z.object({
-  rawText: z.string().min(10, 'Vendor quote text is too short to analyze').max(10000, 'Vendor quote text cannot exceed 10000 characters'),
+  rawText: z
+    .string()
+    .min(10, 'Vendor quote text is too short to analyze')
+    .max(10000, 'Vendor quote text cannot exceed 10000 characters'),
   category: BudgetCategorySchema,
   guestCount: z.number().int().positive().optional()
 });

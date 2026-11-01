@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
-import {
-  OccasionType,
-  EventProfile
-} from '@utsav/shared';
+import { OccasionType, EventProfile } from '@utsav/shared';
 import { useEvent } from '../../context/EventContext.js';
 import * as api from '../../services/api.js';
-import { Sparkles, Calendar, MapPin, Users, IndianRupee, Heart, CheckCircle2, HelpCircle } from 'lucide-react';
+import {
+  Sparkles,
+  Calendar,
+  MapPin,
+  Users,
+  IndianRupee,
+  Heart,
+  CheckCircle2,
+  HelpCircle
+} from 'lucide-react';
 import { ErrorAlert } from '../common/ErrorAlert.js';
 import { LoadingSkeleton } from '../common/LoadingSkeleton.js';
 
@@ -55,10 +61,18 @@ export const OnboardingWizard: React.FC = () => {
   });
   const [city, setCity] = useState<string>('Jaipur, Rajasthan');
   const [theme, setTheme] = useState<string>('Regal heritage with marigold & brass aesthetics');
-  const [culturalNeedsText, setCulturalNeedsText] = useState<string>('Haldi, Mehendi, Sangeet & Vedic Pheras');
-  const [dietaryNeedsText, setDietaryNeedsText] = useState<string>('Pure Vegetarian with dedicated Jain cuisine counter');
-  const [accessibilityNeedsText, setAccessibilityNeedsText] = useState<string>('Wheelchair access to mandap and seating for elders');
-  const [mustHavesText, setMustHavesText] = useState<string>('Live Shehnai at gate, 4K Cinematic drone film');
+  const [culturalNeedsText, setCulturalNeedsText] = useState<string>(
+    'Haldi, Mehendi, Sangeet & Vedic Pheras'
+  );
+  const [dietaryNeedsText, setDietaryNeedsText] = useState<string>(
+    'Pure Vegetarian with dedicated Jain cuisine counter'
+  );
+  const [accessibilityNeedsText, setAccessibilityNeedsText] = useState<string>(
+    'Wheelchair access to mandap and seating for elders'
+  );
+  const [mustHavesText, setMustHavesText] = useState<string>(
+    'Live Shehnai at gate, 4K Cinematic drone film'
+  );
   const [selectedPriorities, setSelectedPriorities] = useState<string[]>([
     'Catering & Dining',
     'Photography & Cinematic Video',
@@ -77,28 +91,41 @@ export const OnboardingWizard: React.FC = () => {
       if (parsed.atmosphereTheme) setTheme(parsed.atmosphereTheme);
       if (parsed.culturalNeeds?.length) setCulturalNeedsText(parsed.culturalNeeds.join(', '));
       if (parsed.dietaryNeeds?.length) setDietaryNeedsText(parsed.dietaryNeeds.join(', '));
-      if (parsed.accessibilityNeeds?.length) setAccessibilityNeedsText(parsed.accessibilityNeeds.join(', '));
+      if (parsed.accessibilityNeeds?.length)
+        setAccessibilityNeedsText(parsed.accessibilityNeeds.join(', '));
       if (parsed.mustHaves?.length) setMustHavesText(parsed.mustHaves.join(', '));
       if (parsed.priorities?.length === 3) setSelectedPriorities(parsed.priorities);
     } else {
       // Structured re-parse merge: preserve confirmed scalar fields, merge list arrays
       if (parsed.culturalNeeds?.length) {
-        const existing = culturalNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+        const existing = culturalNeedsText
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
         const merged = Array.from(new Set([...existing, ...parsed.culturalNeeds]));
         setCulturalNeedsText(merged.join(', '));
       }
       if (parsed.dietaryNeeds?.length) {
-        const existing = dietaryNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+        const existing = dietaryNeedsText
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
         const merged = Array.from(new Set([...existing, ...parsed.dietaryNeeds]));
         setDietaryNeedsText(merged.join(', '));
       }
       if (parsed.accessibilityNeeds?.length) {
-        const existing = accessibilityNeedsText.split(',').map(s => s.trim()).filter(Boolean);
+        const existing = accessibilityNeedsText
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
         const merged = Array.from(new Set([...existing, ...parsed.accessibilityNeeds]));
         setAccessibilityNeedsText(merged.join(', '));
       }
       if (parsed.mustHaves?.length) {
-        const existing = mustHavesText.split(',').map(s => s.trim()).filter(Boolean);
+        const existing = mustHavesText
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
         const merged = Array.from(new Set([...existing, ...parsed.mustHaves]));
         setMustHavesText(merged.join(', '));
       }
@@ -146,17 +173,29 @@ export const OnboardingWizard: React.FC = () => {
     eventDate,
     city,
     atmosphereTheme: theme,
-    culturalNeeds: culturalNeedsText.split(',').map(s => s.trim()).filter(Boolean),
-    dietaryNeeds: dietaryNeedsText.split(',').map(s => s.trim()).filter(Boolean),
-    accessibilityNeeds: accessibilityNeedsText.split(',').map(s => s.trim()).filter(Boolean),
-    mustHaves: mustHavesText.split(',').map(s => s.trim()).filter(Boolean),
+    culturalNeeds: culturalNeedsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+    dietaryNeeds: dietaryNeedsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+    accessibilityNeeds: accessibilityNeedsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+    mustHaves: mustHavesText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
     priorities: selectedPriorities as [string, string, string],
     recommendations
   });
 
   // Explicit structured re-parse when user answers follow-up questions
   const handleReparseWithAnswers = async () => {
-    const hasAnswers = Object.values(followUpAnswers).some(a => a && a.trim());
+    const hasAnswers = Object.values(followUpAnswers).some((a) => a && a.trim());
     if (!hasAnswers) return;
 
     setIsParsingAi(true);
@@ -181,7 +220,9 @@ export const OnboardingWizard: React.FC = () => {
       return;
     }
     if (freeText.length > 5000) {
-      setParseError('Event description cannot exceed 5000 characters. Please shorten your description.');
+      setParseError(
+        'Event description cannot exceed 5000 characters. Please shorten your description.'
+      );
       return;
     }
 
@@ -206,7 +247,8 @@ export const OnboardingWizard: React.FC = () => {
           dietaryNeeds: parsed.dietaryNeeds || [dietaryNeedsText],
           accessibilityNeeds: parsed.accessibilityNeeds || [accessibilityNeedsText],
           mustHaves: parsed.mustHaves || [mustHavesText],
-          priorities: (parsed.priorities as [string, string, string]) || selectedPriorities as any,
+          priorities:
+            (parsed.priorities as [string, string, string]) || (selectedPriorities as any),
           recommendations: parsed.recommendations
         };
         await initializeEvent(profile);
@@ -216,7 +258,9 @@ export const OnboardingWizard: React.FC = () => {
       setMode('wizard');
       setStep(1);
     } catch (err: any) {
-      setParseError(err.message || 'Failed to parse text. Please try again or switch to the guided wizard.');
+      setParseError(
+        err.message || 'Failed to parse text. Please try again or switch to the guided wizard.'
+      );
     } finally {
       setIsParsingAi(false);
     }
@@ -226,7 +270,7 @@ export const OnboardingWizard: React.FC = () => {
   const togglePriority = (prio: string) => {
     if (selectedPriorities.includes(prio)) {
       if (selectedPriorities.length > 1) {
-        setSelectedPriorities(selectedPriorities.filter(p => p !== prio));
+        setSelectedPriorities(selectedPriorities.filter((p) => p !== prio));
       }
     } else {
       if (selectedPriorities.length < 3) {
@@ -241,13 +285,25 @@ export const OnboardingWizard: React.FC = () => {
   // Complete wizard
   const handleCompleteWizard = async () => {
     // If user answered follow-up questions, run structured re-parse and merge
-    let finalCultural = culturalNeedsText.split(',').map(s => s.trim()).filter(Boolean);
-    let finalDietary = dietaryNeedsText.split(',').map(s => s.trim()).filter(Boolean);
-    let finalAccess = accessibilityNeedsText.split(',').map(s => s.trim()).filter(Boolean);
-    let finalMustHaves = mustHavesText.split(',').map(s => s.trim()).filter(Boolean);
+    let finalCultural = culturalNeedsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    let finalDietary = dietaryNeedsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    let finalAccess = accessibilityNeedsText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    let finalMustHaves = mustHavesText
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     let finalRecs = recommendations;
 
-    const hasAnswers = Object.values(followUpAnswers).some(a => a && a.trim());
+    const hasAnswers = Object.values(followUpAnswers).some((a) => a && a.trim());
     if (hasAnswers) {
       try {
         const combined = buildCombinedPromptText();
@@ -269,7 +325,10 @@ export const OnboardingWizard: React.FC = () => {
           finalRecs = reparsed.recommendations;
         }
       } catch (err) {
-        console.warn('Re-parse prior to plan generation encountered an issue, proceeding with confirmed fields:', err);
+        console.warn(
+          'Re-parse prior to plan generation encountered an issue, proceeding with confirmed fields:',
+          err
+        );
       }
     }
 
@@ -307,7 +366,8 @@ export const OnboardingWizard: React.FC = () => {
           Plan Your Auspicious Celebration
         </h2>
         <p className="mt-2 text-sm text-utsav-cream-800 max-w-xl mx-auto">
-          From multi-day Vedic weddings to milestone birthdays, Utsav Planner crafts tailored budgets, sequenced dependency timelines, and vendor coordination with real-time AI.
+          From multi-day Vedic weddings to milestone birthdays, Utsav Planner crafts tailored
+          budgets, sequenced dependency timelines, and vendor coordination with real-time AI.
         </p>
       </div>
 
@@ -344,25 +404,32 @@ export const OnboardingWizard: React.FC = () => {
       {/* FREE TEXT PARSER TAB */}
       {mode === 'free_text' && (
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-utsav-cream-200 shadow-md">
-          <label htmlFor="event-free-text" className="block text-sm font-bold text-utsav-cream-900 mb-1">
+          <label
+            htmlFor="event-free-text"
+            className="block text-sm font-bold text-utsav-cream-900 mb-1"
+          >
             Describe your event in plain Hindi or English:
           </label>
           <p className="text-xs text-utsav-cream-800 mb-4">
-            Mention the occasion, city, budget, guest count, cultural traditions, food preferences, and what matters most to you.
+            Mention the occasion, city, budget, guest count, cultural traditions, food preferences,
+            and what matters most to you.
           </p>
 
           <textarea
             id="event-free-text"
             rows={5}
             value={freeText}
-            onChange={e => setFreeText(e.target.value)}
+            onChange={(e) => setFreeText(e.target.value)}
             placeholder="e.g., We are organizing a 3-day royal Marwari wedding in Jaipur for 350 guests in December 2026. Budget is 30 lakhs. We need pure veg food with a dedicated Jain counter, wheelchair ramp for grandparents, and our top priorities are royal heritage catering, cinematography, and sunset mandap decor..."
             className="w-full p-4 text-sm rounded-xl border border-utsav-cream-200 focus:border-utsav-saffron-500 focus:ring-1 focus:ring-utsav-saffron-500 bg-utsav-cream-50/50"
             disabled={isParsingAi}
           />
 
           {isParsingAi ? (
-            <LoadingSkeleton lines={3} label="Analyzing constraints & crafting cultural recommendations..." />
+            <LoadingSkeleton
+              lines={3}
+              label="Analyzing constraints & crafting cultural recommendations..."
+            />
           ) : (
             <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
               <button
@@ -392,7 +459,7 @@ export const OnboardingWizard: React.FC = () => {
         <div className="bg-white rounded-2xl p-6 sm:p-8 border border-utsav-cream-200 shadow-md">
           {/* Progress bar */}
           <div className="flex items-center justify-between mb-6 pb-4 border-b border-utsav-cream-100">
-            {[1, 2, 3].map(stepNum => (
+            {[1, 2, 3].map((stepNum) => (
               <div key={stepNum} className="flex items-center gap-2">
                 <span
                   className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -404,7 +471,11 @@ export const OnboardingWizard: React.FC = () => {
                   {stepNum}
                 </span>
                 <span className="text-xs font-medium hidden sm:inline text-utsav-cream-800">
-                  {stepNum === 1 ? 'Occasion & Scale' : stepNum === 2 ? 'Date & Location' : 'Traditions & Priorities'}
+                  {stepNum === 1
+                    ? 'Occasion & Scale'
+                    : stepNum === 2
+                      ? 'Date & Location'
+                      : 'Traditions & Priorities'}
                 </span>
               </div>
             ))}
@@ -425,7 +496,9 @@ export const OnboardingWizard: React.FC = () => {
                       type="text"
                       placeholder="Your answer (optional)..."
                       value={followUpAnswers[idx] || ''}
-                      onChange={e => setFollowUpAnswers({ ...followUpAnswers, [idx]: e.target.value })}
+                      onChange={(e) =>
+                        setFollowUpAnswers({ ...followUpAnswers, [idx]: e.target.value })
+                      }
                       className="w-full px-3 py-1.5 text-xs bg-white rounded-lg border border-amber-300 focus:ring-1 focus:ring-utsav-saffron-500"
                     />
                   </div>
@@ -435,11 +508,15 @@ export const OnboardingWizard: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleReparseWithAnswers}
-                  disabled={isParsingAi || !Object.values(followUpAnswers).some(a => a && a.trim())}
+                  disabled={
+                    isParsingAi || !Object.values(followUpAnswers).some((a) => a && a.trim())
+                  }
                   className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-utsav-saffron-600 text-white hover:bg-utsav-saffron-700 transition-colors disabled:opacity-50 cursor-pointer shadow-xs"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>{isParsingAi ? 'Re-parsing with AI...' : 'Re-parse with Clarifications'}</span>
+                  <span>
+                    {isParsingAi ? 'Re-parsing with AI...' : 'Re-parse with Clarifications'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -449,11 +526,11 @@ export const OnboardingWizard: React.FC = () => {
           {step === 1 && (
             <div className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-utsav-cream-900 mb-2">
+                <span className="block text-xs font-bold text-utsav-cream-900 mb-2">
                   Select Occasion Type:
-                </label>
+                </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {OCCASIONS.map(occ => (
+                  {OCCASIONS.map((occ) => (
                     <button
                       key={occ.value}
                       type="button"
@@ -466,7 +543,9 @@ export const OnboardingWizard: React.FC = () => {
                     >
                       <span className="text-2xl">{occ.icon}</span>
                       <div>
-                        <span className="font-semibold text-xs block text-utsav-cream-900">{occ.label}</span>
+                        <span className="font-semibold text-xs block text-utsav-cream-900">
+                          {occ.label}
+                        </span>
                       </div>
                     </button>
                   ))}
@@ -474,14 +553,17 @@ export const OnboardingWizard: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="event-title" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                <label
+                  htmlFor="event-title"
+                  className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                >
                   Celebration Title:
                 </label>
                 <input
                   id="event-title"
                   type="text"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={(e) => setTitle(e.target.value)}
                   className="w-full p-2.5 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
                   placeholder="e.g. Pooja & Rahul's Vivah"
                 />
@@ -489,7 +571,10 @@ export const OnboardingWizard: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="budget-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                  <label
+                    htmlFor="budget-input"
+                    className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                  >
                     Total Estimated Budget (₹ INR):
                   </label>
                   <div className="relative">
@@ -500,7 +585,7 @@ export const OnboardingWizard: React.FC = () => {
                       step="50000"
                       min="10000"
                       value={budgetINR}
-                      onChange={e => setBudgetINR(Number(e.target.value) || 0)}
+                      onChange={(e) => setBudgetINR(Number(e.target.value) || 0)}
                       className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-utsav-cream-200 font-semibold focus:ring-1 focus:ring-utsav-saffron-500"
                     />
                   </div>
@@ -510,7 +595,10 @@ export const OnboardingWizard: React.FC = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="guests-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                  <label
+                    htmlFor="guests-input"
+                    className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                  >
                     Expected Guest Count:
                   </label>
                   <div className="relative">
@@ -520,12 +608,14 @@ export const OnboardingWizard: React.FC = () => {
                       type="number"
                       min="1"
                       value={guests}
-                      onChange={e => setGuests(Number(e.target.value) || 1)}
+                      onChange={(e) => setGuests(Number(e.target.value) || 1)}
                       className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-utsav-cream-200 font-semibold focus:ring-1 focus:ring-utsav-saffron-500"
                     />
                   </div>
                   <span className="text-[11px] text-utsav-cream-800 mt-1 block">
-                    Average: ₹{guests > 0 ? Math.round(budgetINR / guests).toLocaleString('en-IN') : 0} per guest
+                    Average: ₹
+                    {guests > 0 ? Math.round(budgetINR / guests).toLocaleString('en-IN') : 0} per
+                    guest
                   </span>
                 </div>
               </div>
@@ -547,7 +637,10 @@ export const OnboardingWizard: React.FC = () => {
             <div className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="date-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                  <label
+                    htmlFor="date-input"
+                    className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                  >
                     Event Date:
                   </label>
                   <div className="relative">
@@ -556,14 +649,17 @@ export const OnboardingWizard: React.FC = () => {
                       id="date-input"
                       type="date"
                       value={eventDate}
-                      onChange={e => setEventDate(e.target.value)}
+                      onChange={(e) => setEventDate(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="city-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                  <label
+                    htmlFor="city-input"
+                    className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                  >
                     City / Venue Location:
                   </label>
                   <div className="relative">
@@ -572,7 +668,7 @@ export const OnboardingWizard: React.FC = () => {
                       id="city-input"
                       type="text"
                       value={city}
-                      onChange={e => setCity(e.target.value)}
+                      onChange={(e) => setCity(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
                       placeholder="e.g., Mumbai, Delhi, Udaipur"
                     />
@@ -581,14 +677,17 @@ export const OnboardingWizard: React.FC = () => {
               </div>
 
               <div>
-                <label htmlFor="theme-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                <label
+                  htmlFor="theme-input"
+                  className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                >
                   Ambiance & Aesthetic Theme:
                 </label>
                 <input
                   id="theme-input"
                   type="text"
                   value={theme}
-                  onChange={e => setTheme(e.target.value)}
+                  onChange={(e) => setTheme(e.target.value)}
                   className="w-full p-2.5 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
                   placeholder="e.g. Royal Rajputana Heritage with Marigolds and Brass Diya Accents"
                 />
@@ -617,11 +716,11 @@ export const OnboardingWizard: React.FC = () => {
           {step === 3 && (
             <div className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                <span className="block text-xs font-bold text-utsav-cream-900 mb-1">
                   Pick Your Top 3 Priorities (Allocates Budget Weighting):
-                </label>
+                </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                  {POPULAR_PRIORITIES.map(prio => {
+                  {POPULAR_PRIORITIES.map((prio) => {
                     const isSelected = selectedPriorities.includes(prio);
                     return (
                       <button
@@ -636,7 +735,9 @@ export const OnboardingWizard: React.FC = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span className="truncate">{prio}</span>
-                          {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-utsav-saffron-700 flex-shrink-0" />}
+                          {isSelected && (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-utsav-saffron-700 flex-shrink-0" />
+                          )}
                         </div>
                       </button>
                     );
@@ -646,28 +747,34 @@ export const OnboardingWizard: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="cultural-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                  <label
+                    htmlFor="cultural-input"
+                    className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                  >
                     Cultural Ceremonies & Traditions:
                   </label>
                   <textarea
                     id="cultural-input"
                     rows={2}
                     value={culturalNeedsText}
-                    onChange={e => setCulturalNeedsText(e.target.value)}
+                    onChange={(e) => setCulturalNeedsText(e.target.value)}
                     className="w-full p-2.5 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
                     placeholder="e.g. Sangeet, Mehendi, Haldi, Muhurat Pheras"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="dietary-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                  <label
+                    htmlFor="dietary-input"
+                    className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                  >
                     Dietary Requirements:
                   </label>
                   <textarea
                     id="dietary-input"
                     rows={2}
                     value={dietaryNeedsText}
-                    onChange={e => setDietaryNeedsText(e.target.value)}
+                    onChange={(e) => setDietaryNeedsText(e.target.value)}
                     className="w-full p-2.5 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
                     placeholder="e.g. Pure Veg, Jain (no root veg), Vegan counter"
                   />
@@ -676,28 +783,34 @@ export const OnboardingWizard: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="access-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                  <label
+                    htmlFor="access-input"
+                    className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                  >
                     Accessibility Needs:
                   </label>
                   <input
                     id="access-input"
                     type="text"
                     value={accessibilityNeedsText}
-                    onChange={e => setAccessibilityNeedsText(e.target.value)}
+                    onChange={(e) => setAccessibilityNeedsText(e.target.value)}
                     className="w-full p-2 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
                     placeholder="e.g. Wheelchair ramp, elderly seating"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="musthaves-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+                  <label
+                    htmlFor="musthaves-input"
+                    className="block text-xs font-bold text-utsav-cream-900 mb-1"
+                  >
                     Non-Negotiable Must-Haves:
                   </label>
                   <input
                     id="musthaves-input"
                     type="text"
                     value={mustHavesText}
-                    onChange={e => setMustHavesText(e.target.value)}
+                    onChange={(e) => setMustHavesText(e.target.value)}
                     className="w-full p-2 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
                     placeholder="e.g. Live Shehnai, Drone photography"
                   />

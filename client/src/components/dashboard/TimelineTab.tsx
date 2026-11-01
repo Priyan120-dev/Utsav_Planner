@@ -2,45 +2,60 @@ import React, { useState } from 'react';
 import { useEvent } from '../../context/EventContext.js';
 import { TaskStatus } from '@utsav/shared';
 import * as api from '../../services/api.js';
-import { 
-  CheckCircle2, 
-  Lock, 
-  Clock, 
-  AlertTriangle, 
-  Flame, 
-  Calendar, 
-  ChevronRight, 
+import {
+  CheckCircle2,
+  Lock,
+  Clock,
+  AlertTriangle,
+  Flame,
+  Calendar,
+  ChevronRight,
   Sparkles
 } from 'lucide-react';
 import { LoadingSkeleton } from '../common/LoadingSkeleton.js';
 import { ErrorAlert } from '../common/ErrorAlert.js';
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; badge: string; icon: any }> = {
-  done: { label: 'Done', badge: 'bg-emerald-100 text-emerald-800 border-emerald-300', icon: CheckCircle2 },
-  in_progress: { label: 'In Progress', badge: 'bg-blue-100 text-blue-800 border-blue-300', icon: Clock },
-  ready: { label: 'Ready to Start', badge: 'bg-amber-100 text-amber-800 border-amber-300', icon: ChevronRight },
-  locked: { label: 'Locked (Prereqs Pending)', badge: 'bg-gray-100 text-gray-700 border-gray-300', icon: Lock }
+  done: {
+    label: 'Done',
+    badge: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    icon: CheckCircle2
+  },
+  in_progress: {
+    label: 'In Progress',
+    badge: 'bg-blue-100 text-blue-800 border-blue-300',
+    icon: Clock
+  },
+  ready: {
+    label: 'Ready to Start',
+    badge: 'bg-amber-100 text-amber-800 border-amber-300',
+    icon: ChevronRight
+  },
+  locked: {
+    label: 'Locked (Prereqs Pending)',
+    badge: 'bg-gray-100 text-gray-700 border-gray-300',
+    icon: Lock
+  }
 };
 
 export const TimelineTab: React.FC = () => {
   const { eventState, toggleTaskStatus, commitDynamicChange } = useEvent();
-  if (!eventState) return null;
-
-  const { timeline } = eventState;
-  const tasks = timeline.tasks;
 
   // Filter state
   const [filter, setFilter] = useState<'all' | 'critical' | 'ready' | 'locked' | 'done'>('all');
 
   // Date Shift Simulation Modal State
   const [isSimulatingDate, setIsSimulatingDate] = useState<boolean>(false);
-  const [newSimulatedDate, setNewSimulatedDate] = useState<string>(timeline.eventDate);
+  const [newSimulatedDate, setNewSimulatedDate] = useState<string>(() =>
+    eventState ? eventState.timeline.eventDate : ''
+  );
   const [isDateShifting, setIsDateShifting] = useState<boolean>(false);
   const [dateShiftResult, setDateShiftResult] = useState<any>(null);
   const [shiftError, setShiftError] = useState<string | null>(null);
 
   const handleSimulateDateShift = async () => {
-    if (!newSimulatedDate || newSimulatedDate === timeline.eventDate) return;
+    if (!eventState || !newSimulatedDate || newSimulatedDate === eventState.timeline.eventDate)
+      return;
     setIsDateShifting(true);
     setShiftError(null);
 
@@ -58,7 +73,9 @@ export const TimelineTab: React.FC = () => {
     if (!dateShiftResult || !newSimulatedDate) return;
     const days = dateShiftResult.daysShifted;
     const direction = days < 0 ? 'Preponed' : 'Postponed';
-    const summary = dateShiftResult.advice?.compressionAdvice || `${direction} celebration by ${Math.abs(days)} days to ${newSimulatedDate}.`;
+    const summary =
+      dateShiftResult.advice?.compressionAdvice ||
+      `${direction} celebration by ${Math.abs(days)} days to ${newSimulatedDate}.`;
     commitDynamicChange(
       'date',
       newSimulatedDate,
@@ -69,7 +86,12 @@ export const TimelineTab: React.FC = () => {
     setDateShiftResult(null);
   };
 
-  const filteredTasks = tasks.filter(t => {
+  if (!eventState) return null;
+
+  const { timeline } = eventState;
+  const tasks = timeline.tasks;
+
+  const filteredTasks = tasks.filter((t) => {
     if (filter === 'critical') return t.isCriticalPath;
     if (filter === 'ready') return t.status === 'ready';
     if (filter === 'locked') return t.status === 'locked';
@@ -87,11 +109,12 @@ export const TimelineTab: React.FC = () => {
               Sequenced Timeline & Dependent Tasks
             </h2>
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-utsav-saffron-100 text-utsav-saffron-800">
-              {tasks.filter(t => t.status === 'done').length}/{tasks.length} Completed
+              {tasks.filter((t) => t.status === 'done').length}/{tasks.length} Completed
             </span>
           </div>
           <p className="text-xs text-utsav-cream-800 mt-1">
-            Tasks are locked until dependencies are done &bull; Deadlines computed deterministically from {timeline.eventDate}
+            Tasks are locked until dependencies are done &bull; Deadlines computed deterministically
+            from {timeline.eventDate}
           </p>
         </div>
 
@@ -126,14 +149,15 @@ export const TimelineTab: React.FC = () => {
           </div>
 
           <p className="text-xs text-amber-900">
-            Current Date: <strong>{timeline.eventDate}</strong>. Choose a new date to see deterministic deadline recomputation and AI compression advice:
+            Current Date: <strong>{timeline.eventDate}</strong>. Choose a new date to see
+            deterministic deadline recomputation and AI compression advice:
           </p>
 
           <div className="flex flex-wrap items-center gap-3">
             <input
               type="date"
               value={newSimulatedDate}
-              onChange={e => setNewSimulatedDate(e.target.value)}
+              onChange={(e) => setNewSimulatedDate(e.target.value)}
               className="px-3 py-1.5 text-xs bg-white rounded-xl border border-amber-300 text-amber-950 font-semibold focus:ring-1 focus:ring-utsav-saffron-500"
             />
             <button
@@ -149,7 +173,12 @@ export const TimelineTab: React.FC = () => {
 
           {shiftError && <ErrorAlert message={shiftError} onDismiss={() => setShiftError(null)} />}
 
-          {isDateShifting && <LoadingSkeleton lines={2} label="Recomputing deadlines in code & querying Gemini for compression advice..." />}
+          {isDateShifting && (
+            <LoadingSkeleton
+              lines={2}
+              label="Recomputing deadlines in code & querying Gemini for compression advice..."
+            />
+          )}
 
           {dateShiftResult && (
             <div className="bg-white p-4 rounded-xl border border-amber-200 text-xs space-y-3">
@@ -173,11 +202,12 @@ export const TimelineTab: React.FC = () => {
               {dateShiftResult.unrealisticTaskIds?.length > 0 && (
                 <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-900">
                   <span className="font-bold block mb-1">
-                    ⚠️ {dateShiftResult.unrealisticTaskIds.length} Tasks with tight or expired deadlines:
+                    ⚠️ {dateShiftResult.unrealisticTaskIds.length} Tasks with tight or expired
+                    deadlines:
                   </span>
                   <ul className="list-disc list-inside space-y-0.5">
                     {dateShiftResult.unrealisticTaskIds.map((id: string) => {
-                      const t = tasks.find(item => item.id === id);
+                      const t = tasks.find((item) => item.id === id);
                       return <li key={id}>{t?.title || id}</li>;
                     })}
                   </ul>
@@ -186,7 +216,9 @@ export const TimelineTab: React.FC = () => {
 
               {dateShiftResult.advice?.suggestedDrops?.length > 0 && (
                 <div className="p-2.5 rounded-lg bg-utsav-saffron-50 border border-utsav-saffron-200 text-utsav-saffron-950">
-                  <span className="font-bold block mb-1">Recommended Items to Compress or Drop:</span>
+                  <span className="font-bold block mb-1">
+                    Recommended Items to Compress or Drop:
+                  </span>
                   <ul className="list-disc list-inside space-y-0.5">
                     {dateShiftResult.advice.suggestedDrops.map((drop: string, idx: number) => (
                       <li key={idx}>{drop}</li>
@@ -222,7 +254,7 @@ export const TimelineTab: React.FC = () => {
 
       {/* Filter Chips */}
       <div className="flex flex-wrap items-center gap-2">
-        {(['all', 'critical', 'ready', 'locked', 'done'] as const).map(tab => (
+        {(['all', 'critical', 'ready', 'locked', 'done'] as const).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -245,7 +277,7 @@ export const TimelineTab: React.FC = () => {
             No tasks match the selected filter.
           </div>
         ) : (
-          filteredTasks.map(task => {
+          filteredTasks.map((task) => {
             const statusInfo = STATUS_CONFIG[task.status];
             const StatusIcon = statusInfo.icon;
 
@@ -262,9 +294,7 @@ export const TimelineTab: React.FC = () => {
                   {/* Task Title and Badges */}
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-bold text-utsav-cream-900">
-                        {task.title}
-                      </span>
+                      <span className="text-xs font-bold text-utsav-cream-900">{task.title}</span>
 
                       {task.isCriticalPath && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 border border-red-200">
@@ -288,19 +318,25 @@ export const TimelineTab: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-utsav-cream-800">
-                      <span>Category: <strong className="capitalize">{task.category}</strong></span>
+                      <span>
+                        Category: <strong className="capitalize">{task.category}</strong>
+                      </span>
                       <span>&bull;</span>
-                      <span>Target: <strong>{task.targetDate}</strong> ({task.daysBeforeEvent}d before)</span>
+                      <span>
+                        Target: <strong>{task.targetDate}</strong> ({task.daysBeforeEvent}d before)
+                      </span>
                       <span>&bull;</span>
-                      <span className="capitalize">Priority: <strong>{task.priority}</strong></span>
+                      <span className="capitalize">
+                        Priority: <strong>{task.priority}</strong>
+                      </span>
                     </div>
 
                     {/* Dependencies */}
                     {task.dependsOn && task.dependsOn.length > 0 && (
                       <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-utsav-cream-800">
                         <span>Prerequisites:</span>
-                        {task.dependsOn.map(depId => {
-                          const dep = tasks.find(t => t.id === depId);
+                        {task.dependsOn.map((depId) => {
+                          const dep = tasks.find((t) => t.id === depId);
                           const isDepDone = dep?.status === 'done';
                           return (
                             <span

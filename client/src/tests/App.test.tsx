@@ -82,19 +82,31 @@ describe('App Component', () => {
 
     // Switch to Budget tab
     fireEvent.click(screen.getByRole('tab', { name: /Budget & Trade-offs/i }));
-    expect(screen.getByRole('tab', { name: /Budget & Trade-offs/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Budget & Trade-offs/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
 
     // Switch to Timeline tab
     fireEvent.click(screen.getByRole('tab', { name: /Timeline & Tasks/i }));
-    expect(screen.getByRole('tab', { name: /Timeline & Tasks/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Timeline & Tasks/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
 
     // Switch to Vendors tab
     fireEvent.click(screen.getByRole('tab', { name: /Vendors & Quotes/i }));
-    expect(screen.getByRole('tab', { name: /Vendors & Quotes/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Vendors & Quotes/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
 
     // Switch to Changes tab
     fireEvent.click(screen.getByRole('tab', { name: /Changes & History/i }));
-    expect(screen.getByRole('tab', { name: /Changes & History/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Changes & History/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
   });
 
   it('supports keyboard navigation between tabs (ArrowRight, ArrowLeft, Home, End)', () => {
@@ -108,18 +120,30 @@ describe('App Component', () => {
 
     const overviewTab = screen.getByRole('tab', { name: /Overview & Readiness/i });
     fireEvent.keyDown(overviewTab, { key: 'ArrowRight' });
-    expect(screen.getByRole('tab', { name: /Budget & Trade-offs/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Budget & Trade-offs/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
 
     const budgetTab = screen.getByRole('tab', { name: /Budget & Trade-offs/i });
     fireEvent.keyDown(budgetTab, { key: 'ArrowLeft' });
-    expect(screen.getByRole('tab', { name: /Overview & Readiness/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Overview & Readiness/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
 
     fireEvent.keyDown(overviewTab, { key: 'End' });
-    expect(screen.getByRole('tab', { name: /Changes & History/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Changes & History/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
 
     const changesTab = screen.getByRole('tab', { name: /Changes & History/i });
     fireEvent.keyDown(changesTab, { key: 'Home' });
-    expect(screen.getByRole('tab', { name: /Overview & Readiness/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Overview & Readiness/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
   });
 
   it('opens and closes the "Something Changed" modal from the Header', () => {

@@ -17,7 +17,7 @@ export function calculateTieredCost(
 
   // Sort tiers ascending by upToGuests
   const sorted = [...tiers].sort((a, b) => a.upToGuests - b.upToGuests);
-  const matchedTier = sorted.find(t => count <= t.upToGuests) || sorted[sorted.length - 1];
+  const matchedTier = sorted.find((t) => count <= t.upToGuests) || sorted[sorted.length - 1];
   return Math.round(count * matchedTier.pricePerPlate);
 }
 

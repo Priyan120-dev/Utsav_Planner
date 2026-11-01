@@ -65,10 +65,15 @@ describe('Zod Schema Validation for LLM Responses', () => {
       expect(result.data.expectedGuests).toBe(400);
       expect(result.data.culturalNeeds).toEqual(['Haldi', 'Mehendi', 'Sangeet', 'Pheras']);
       expect(result.data.dietaryNeeds).toEqual(['Pure Vegetarian']);
-      expect(result.data.accessibilityNeeds).toEqual(['Wheelchair ramp access', 'Golf carts for elders']);
+      expect(result.data.accessibilityNeeds).toEqual([
+        'Wheelchair ramp access',
+        'Golf carts for elders'
+      ]);
       expect(result.data.priorities).toHaveLength(3);
       expect(result.data.priorities).toEqual(['Catering', 'Photography', 'Decor']);
-      expect(result.data.followUpQuestions).toEqual(['Do you require accommodation for outstation guests?']);
+      expect(result.data.followUpQuestions).toEqual([
+        'Do you require accommodation for outstation guests?'
+      ]);
     }
   });
 
@@ -192,9 +197,7 @@ describe('Zod Schema Validation for LLM Responses', () => {
       guestCapacity: null, // Unstated
       inclusions: ['Lawn access for 8 hours'],
       exclusions: ['Electricity generator backup'],
-      additionalChargesBreakdown: [
-        { item: 'Security Deposit', amountINR: 50000 }
-      ],
+      additionalChargesBreakdown: [{ item: 'Security Deposit', amountINR: 50000 }],
       paymentTerms: null, // Unstated
       cancellationPolicy: null, // Unstated
       missingInfo: ['Guest capacity not mentioned in quote'],

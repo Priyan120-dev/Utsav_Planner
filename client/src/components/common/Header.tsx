@@ -54,7 +54,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenSomethingChanged }) => {
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm('Are you sure you want to reset your celebration plan and start fresh?')) {
+                  if (
+                    window.confirm(
+                      'Are you sure you want to reset your celebration plan and start fresh?'
+                    )
+                  ) {
                     resetEvent();
                   }
                 }}

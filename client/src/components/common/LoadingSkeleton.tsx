@@ -33,7 +33,7 @@ export const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({
           <div
             key={i}
             className="h-3 bg-utsav-cream-100 rounded-md"
-            style={{ width: `${100 - (i * 15)}%` }}
+            style={{ width: `${100 - i * 15}%` }}
           ></div>
         ))}
       </div>

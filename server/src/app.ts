@@ -24,63 +24,66 @@ if (!fs.existsSync(clientDistPath)) {
 
 // Runtime verification of client build directory
 const clientDistExists = fs.existsSync(clientDistPath);
-if (!clientDistExists && (config.NODE_ENV === 'production' || process.env.NODE_ENV === 'production')) {
+if (
+  !clientDistExists &&
+  (config.NODE_ENV === 'production' || process.env.NODE_ENV === 'production')
+) {
   console.warn(`[SERVER WARN] Production client build not found at runtime: ${clientDistPath}`);
 }
 
 // Security Headers with Helmet CSP
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-      fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
-      imgSrc: ["'self'", 'data:'],
-      connectSrc: ["'self'", config.CLIENT_URL].filter(Boolean)
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:'],
+        connectSrc: ["'self'", config.CLIENT_URL].filter(Boolean)
+      }
     }
-  }
-}));
+  })
+);
 
 // CORS Configuration
-const allowedOrigins = [
-  config.CLIENT_URL,
-  'http://localhost:5173',
-  'http://127.0.0.1:5173'
-];
+const allowedOrigins = [config.CLIENT_URL, 'http://localhost:5173', 'http://127.0.0.1:5173'];
 
-app.use(cors((req: Request, callback: (err: Error | null, options?: CorsOptions) => void) => {
-  const origin = req.header('Origin');
-  const host = req.get('host');
+app.use(
+  cors((req: Request, callback: (err: Error | null, options?: CorsOptions) => void) => {
+    const origin = req.header('Origin');
+    const host = req.get('host');
 
-  let isAllowed = false;
+    let isAllowed = false;
 
-  if (!origin) {
-    // Allow requests with no origin (mobile apps, curl, postman, and same-origin GET)
-    isAllowed = true;
-  } else if (allowedOrigins.includes(origin)) {
-    // Whitelisted origin
-    isAllowed = true;
-  } else if (host) {
-    // Allow same-origin requests (e.g. from browser on deployed host)
-    try {
-      const originUrl = new URL(origin);
-      if (originUrl.host === host) {
-        isAllowed = true;
+    if (!origin) {
+      // Allow requests with no origin (mobile apps, curl, postman, and same-origin GET)
+      isAllowed = true;
+    } else if (allowedOrigins.includes(origin)) {
+      // Whitelisted origin
+      isAllowed = true;
+    } else if (host) {
+      // Allow same-origin requests (e.g. from browser on deployed host)
+      try {
+        const originUrl = new URL(origin);
+        if (originUrl.host === host) {
+          isAllowed = true;
+        }
+      } catch {
+        // Ignore invalid URL
       }
-    } catch {
-      // Ignore invalid URL
     }
-  }
 
-  if (isAllowed) {
-    callback(null, { origin: true, credentials: true });
-  } else {
-    const corsError: any = new Error('Origin not allowed');
-    corsError.status = 403;
-    callback(corsError);
-  }
-}));
+    if (isAllowed) {
+      callback(null, { origin: true, credentials: true });
+    } else {
+      const corsError: any = new Error('Origin not allowed');
+      corsError.status = 403;
+      callback(corsError);
+    }
+  })
+);
 
 // Request size limits (protect against large body payload attacks)
 app.use(express.json({ limit: '1mb' }));
@@ -119,7 +122,10 @@ if (config.NODE_ENV === 'production' || process.env.NODE_ENV === 'production') {
   // Allow dynamic handling in test environments if NODE_ENV is set to production
   const staticMiddleware = express.static(clientDistPath);
   app.use((req: Request, res: Response, next: NextFunction) => {
-    if ((config.NODE_ENV === 'production' || process.env.NODE_ENV === 'production') && clientDistExists) {
+    if (
+      (config.NODE_ENV === 'production' || process.env.NODE_ENV === 'production') &&
+      clientDistExists
+    ) {
       return staticMiddleware(req, res, next);
     }
     next();

@@ -3,7 +3,13 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { VendorsTab } from '../components/dashboard/VendorsTab.js';
 import { EventProvider } from '../context/EventContext.js';
 import * as api from '../services/api.js';
-import { EventState, EventProfile, initializeBudgetState, QuoteItem, VendorBrief } from '@utsav/shared';
+import {
+  EventState,
+  EventProfile,
+  initializeBudgetState,
+  QuoteItem,
+  VendorBrief
+} from '@utsav/shared';
 
 describe('VendorsTab Component', () => {
   const STORAGE_KEY = 'utsav_planner_event_state_v1';
@@ -37,9 +43,7 @@ describe('VendorsTab Component', () => {
     inclusions: ['Welcome drinks', 'Multi-course dinner buffet'],
     exclusions: ['Packaged mineral water'],
     additionalChargesINR: 5000,
-    additionalChargesBreakdown: [
-      { item: 'Staff service gratuity', amountINR: 5000 }
-    ],
+    additionalChargesBreakdown: [{ item: 'Staff service gratuity', amountINR: 5000 }],
     paymentTerms: '50% advance, balance on event day',
     cancellationPolicy: 'Non-refundable advance within 30 days',
     missingInfo: ['Guest capacity unstated'],
@@ -94,7 +98,9 @@ describe('VendorsTab Component', () => {
     );
 
     expect(screen.getByText('Vendor Coordination & Quote Comparison')).toBeInTheDocument();
-    expect(screen.getAllByText('Availability not verified: confirm directly with vendor').length).toBeGreaterThanOrEqual(1);
+    expect(
+      screen.getAllByText('Availability not verified: confirm directly with vendor').length
+    ).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Royal Rajputana Caterers')).toBeInTheDocument();
     expect(screen.getByText(/₹2,80,000/)).toBeInTheDocument();
     expect(screen.getByText(/Category Requirements Brief: Catering & Dining/i)).toBeInTheDocument();
@@ -112,7 +118,9 @@ describe('VendorsTab Component', () => {
       negotiationQuestions: ['Are outside decorators allowed without royalty fee?']
     };
 
-    const generateSpy = vi.spyOn(api, 'generateVendorBrief').mockResolvedValueOnce(venueBrief as any);
+    const generateSpy = vi
+      .spyOn(api, 'generateVendorBrief')
+      .mockResolvedValueOnce(venueBrief as any);
 
     render(
       <EventProvider>
@@ -129,8 +137,12 @@ describe('VendorsTab Component', () => {
     fireEvent.click(generateBtn);
 
     expect(generateSpy).toHaveBeenCalledWith(mockProfile, 'venue', expect.any(Number));
-    expect(await screen.findByText('Outdoor royal palace lawns for 250 guests')).toBeInTheDocument();
-    expect(screen.getByText('Are outside decorators allowed without royalty fee?')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Outdoor royal palace lawns for 250 guests')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Are outside decorators allowed without royalty fee?')
+    ).toBeInTheDocument();
   });
 
   it('displays error if generating vendor brief fails', async () => {
@@ -183,19 +195,25 @@ describe('VendorsTab Component', () => {
     const openDrawerBtn = screen.getByRole('button', { name: /Parse Raw Vendor Quote/i });
     fireEvent.click(openDrawerBtn);
 
-    expect(screen.getByText(/Paste Raw Vendor Quote \/ Email \/ WhatsApp Message/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Paste Raw Vendor Quote \/ Email \/ WhatsApp Message/i)
+    ).toBeInTheDocument();
 
     // Test short text validation
     const submitBtn = screen.getByRole('button', { name: /Extract Quote & Compute TCO/i });
     fireEvent.click(submitBtn);
 
     expect(
-      await screen.findByText(/Please paste the vendor quotation message or email \(at least 10 characters\)\./i)
+      await screen.findByText(
+        /Please paste the vendor quotation message or email \(at least 10 characters\)\./i
+      )
     ).toBeInTheDocument();
 
     // Fill valid text
     const textarea = screen.getByPlaceholderText(/Paste raw vendor message here:/i);
-    fireEvent.change(textarea, { target: { value: 'Udaipur Royal Feast package: Rs 50,000 base package for 300 guests.' } });
+    fireEvent.change(textarea, {
+      target: { value: 'Udaipur Royal Feast package: Rs 50,000 base package for 300 guests.' }
+    });
 
     fireEvent.click(submitBtn);
 
@@ -222,7 +240,9 @@ describe('VendorsTab Component', () => {
     fireEvent.click(openDrawerBtn);
 
     const textarea = screen.getByPlaceholderText(/Paste raw vendor message here:/i);
-    fireEvent.change(textarea, { target: { value: 'Valid long text quotation message from vendor.' } });
+    fireEvent.change(textarea, {
+      target: { value: 'Valid long text quotation message from vendor.' }
+    });
 
     const submitBtn = screen.getByRole('button', { name: /Extract Quote & Compute TCO/i });
     fireEvent.click(submitBtn);

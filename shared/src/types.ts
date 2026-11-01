@@ -1,15 +1,11 @@
-export type OccasionType = 
-  | 'wedding' 
-  | 'birthday' 
-  | 'community' 
-  | 'anniversary' 
-  | 'cultural_festival';
+export type OccasionType =
+  'wedding' | 'birthday' | 'community' | 'anniversary' | 'cultural_festival';
 
 export type TaskStatus = 'locked' | 'ready' | 'in_progress' | 'done';
 
 export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
 
-export type BudgetCategory = 
+export type BudgetCategory =
   | 'venue'
   | 'catering'
   | 'decor'

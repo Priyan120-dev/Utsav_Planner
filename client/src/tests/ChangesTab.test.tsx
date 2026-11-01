@@ -130,7 +130,9 @@ describe('ChangesTab Component', () => {
       'Expanded family and outstation guest list'
     );
 
-    expect(await screen.findByText('Per-guest spend rebalanced smoothly for 250 guests.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Per-guest spend rebalanced smoothly for 250 guests.')
+    ).toBeInTheDocument();
     expect(screen.getByText('Scale catering by 15%')).toBeInTheDocument();
 
     // Confirm and Commit
@@ -141,7 +143,9 @@ describe('ChangesTab Component', () => {
   });
 
   it('handles evaluation error gracefully', async () => {
-    vi.spyOn(api, 'assessDynamicChangeImpact').mockRejectedValueOnce(new Error('Assessment API timeout'));
+    vi.spyOn(api, 'assessDynamicChangeImpact').mockRejectedValueOnce(
+      new Error('Assessment API timeout')
+    );
 
     render(
       <EventProvider>

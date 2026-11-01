@@ -10,7 +10,10 @@ import {
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
 
 export class ApiError extends Error {
-  constructor(message: string, public status?: number) {
+  constructor(
+    message: string,
+    public status?: number
+  ) {
     super(message);
     this.name = 'ApiError';
   }
@@ -20,9 +23,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const res = await fetch(`${API_BASE}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...options.headers
     },
-    ...options,
+    ...options
   });
 
   if (!res.ok) {

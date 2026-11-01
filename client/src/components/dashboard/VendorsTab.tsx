@@ -2,23 +2,13 @@ import React, { useState } from 'react';
 import { useEvent } from '../../context/EventContext.js';
 import { BudgetCategory, BUDGET_CATEGORIES } from '@utsav/shared';
 import * as api from '../../services/api.js';
-import { 
-  FileText, 
-  Sparkles, 
-  HelpCircle, 
-  Plus, 
-  Layers, 
-  ShieldAlert
-} from 'lucide-react';
+import { FileText, Sparkles, HelpCircle, Plus, Layers, ShieldAlert } from 'lucide-react';
 import { DisclaimerBadge } from '../common/DisclaimerBadge.js';
 import { LoadingSkeleton } from '../common/LoadingSkeleton.js';
 import { ErrorAlert } from '../common/ErrorAlert.js';
 
 export const VendorsTab: React.FC = () => {
   const { eventState, saveVendorBrief, saveQuote } = useEvent();
-  if (!eventState) return null;
-
-  const { profile, budget, vendorBriefs, quotes } = eventState;
 
   // Selected Category for Brief
   const [selectedCategory, setSelectedCategory] = useState<BudgetCategory>('catering');
@@ -32,16 +22,15 @@ export const VendorsTab: React.FC = () => {
   const [isExtractingQuote, setIsExtractingQuote] = useState<boolean>(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
-  const activeBrief = vendorBriefs[selectedCategory];
-  const allocatedBudgetForCategory = budget.categories[selectedCategory]?.allocatedAmountINR || 0;
-
   // Handle generating Vendor Brief & 8-10 Questions
   const handleGenerateBrief = async () => {
+    if (!eventState) return;
     setIsGeneratingBrief(true);
     setBriefError(null);
 
+    const allocated = eventState.budget.categories[selectedCategory]?.allocatedAmountINR || 0;
     try {
-      const brief = await api.generateVendorBrief(profile, selectedCategory, allocatedBudgetForCategory);
+      const brief = await api.generateVendorBrief(eventState.profile, selectedCategory, allocated);
       saveVendorBrief(brief);
     } catch (err: any) {
       setBriefError(err.message || 'Failed to generate vendor brief.');
@@ -52,12 +41,15 @@ export const VendorsTab: React.FC = () => {
 
   // Handle Extracting Quote from Raw text
   const handleExtractQuote = async () => {
+    if (!eventState) return;
     if (!rawQuoteText.trim() || rawQuoteText.length < 10) {
       setQuoteError('Please paste the vendor quotation message or email (at least 10 characters).');
       return;
     }
     if (rawQuoteText.length > 10000) {
-      setQuoteError('Vendor quote text cannot exceed 10000 characters. Please shorten the pasted text.');
+      setQuoteError(
+        'Vendor quote text cannot exceed 10000 characters. Please shorten the pasted text.'
+      );
       return;
     }
 
@@ -65,7 +57,11 @@ export const VendorsTab: React.FC = () => {
     setQuoteError(null);
 
     try {
-      const extractedQuote = await api.extractVendorQuote(rawQuoteText, quoteCategory, profile.expectedGuests);
+      const extractedQuote = await api.extractVendorQuote(
+        rawQuoteText,
+        quoteCategory,
+        eventState.profile.expectedGuests
+      );
       saveQuote(extractedQuote);
       setRawQuoteText('');
       setIsParsingQuote(false);
@@ -76,8 +72,14 @@ export const VendorsTab: React.FC = () => {
     }
   };
 
+  if (!eventState) return null;
+
+  const { budget, vendorBriefs, quotes } = eventState;
+  const activeBrief = vendorBriefs[selectedCategory];
+  const allocatedBudgetForCategory = budget.categories[selectedCategory]?.allocatedAmountINR || 0;
+
   // Quotes filtered for comparison
-  const relevantQuotes = quotes.filter(q => q.category === selectedCategory);
+  const relevantQuotes = quotes.filter((q) => q.category === selectedCategory);
 
   return (
     <div className="space-y-6">
@@ -91,7 +93,8 @@ export const VendorsTab: React.FC = () => {
             <DisclaimerBadge customText="Availability not verified: confirm directly with vendor" />
           </div>
           <p className="text-xs text-utsav-cream-800 mt-1">
-            Generate customized RFPs, 8-10 targeted negotiation questions, and parse raw vendor messages into structured TCO matrices.
+            Generate customized RFPs, 8-10 targeted negotiation questions, and parse raw vendor
+            messages into structured TCO matrices.
           </p>
         </div>
 
@@ -110,10 +113,10 @@ export const VendorsTab: React.FC = () => {
 
       {/* Category Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-        {BUDGET_CATEGORIES.filter(c => c !== 'contingency').map(cat => {
+        {BUDGET_CATEGORIES.filter((c) => c !== 'contingency').map((cat) => {
           const isSelected = selectedCategory === cat;
           const hasBrief = Boolean(vendorBriefs[cat]);
-          const quoteCount = quotes.filter(q => q.category === cat).length;
+          const quoteCount = quotes.filter((q) => q.category === cat).length;
 
           return (
             <button
@@ -127,9 +130,13 @@ export const VendorsTab: React.FC = () => {
               }`}
             >
               <span>{budget.categories[cat]?.label || cat}</span>
-              {hasBrief && <span className="text-[10px] bg-white/30 text-white px-1 rounded">Brief</span>}
+              {hasBrief && (
+                <span className="text-[10px] bg-white/30 text-white px-1 rounded">Brief</span>
+              )}
               {quoteCount > 0 && (
-                <span className={`text-[10px] px-1.5 rounded-full font-bold ${isSelected ? 'bg-white text-utsav-saffron-900' : 'bg-utsav-cream-200 text-utsav-cream-900'}`}>
+                <span
+                  className={`text-[10px] px-1.5 rounded-full font-bold ${isSelected ? 'bg-white text-utsav-saffron-900' : 'bg-utsav-cream-200 text-utsav-cream-900'}`}
+                >
                   {quoteCount}
                 </span>
               )}
@@ -147,7 +154,8 @@ export const VendorsTab: React.FC = () => {
               <span>Category Requirements Brief: {budget.categories[selectedCategory]?.label}</span>
             </h3>
             <span className="text-xs text-utsav-cream-800">
-              Allocated Category Budget: <strong>₹{allocatedBudgetForCategory.toLocaleString('en-IN')}</strong> (Estimate)
+              Allocated Category Budget:{' '}
+              <strong>₹{allocatedBudgetForCategory.toLocaleString('en-IN')}</strong> (Estimate)
             </span>
           </div>
 
@@ -165,7 +173,10 @@ export const VendorsTab: React.FC = () => {
         {briefError && <ErrorAlert message={briefError} onDismiss={() => setBriefError(null)} />}
 
         {isGeneratingBrief && (
-          <LoadingSkeleton lines={4} label="Synthesizing scope, inclusions, and 8-10 targeted negotiation questions..." />
+          <LoadingSkeleton
+            lines={4}
+            label="Synthesizing scope, inclusions, and 8-10 targeted negotiation questions..."
+          />
         )}
 
         {activeBrief && !isGeneratingBrief && (
@@ -177,7 +188,9 @@ export const VendorsTab: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="p-3 rounded-xl border border-utsav-cream-200 bg-white">
-                <span className="font-bold text-utsav-cream-900 block mb-1">Capacity Requirement:</span>
+                <span className="font-bold text-utsav-cream-900 block mb-1">
+                  Capacity Requirement:
+                </span>
                 <p className="text-utsav-cream-800">{activeBrief.capacityRequirement}</p>
               </div>
 
@@ -187,16 +200,25 @@ export const VendorsTab: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-xl border border-utsav-cream-200 bg-white">
-                <span className="font-bold text-utsav-cream-900 block mb-1">Accessibility Provisions:</span>
-                <p className="text-utsav-cream-800">{activeBrief.accessibilityRequirements?.join(', ') || 'Standard access'}</p>
+                <span className="font-bold text-utsav-cream-900 block mb-1">
+                  Accessibility Provisions:
+                </span>
+                <p className="text-utsav-cream-800">
+                  {activeBrief.accessibilityRequirements?.join(', ') || 'Standard access'}
+                </p>
               </div>
             </div>
 
             <div>
-              <span className="font-bold text-utsav-cream-900 block mb-1.5">Mandatory Baseline Inclusions:</span>
+              <span className="font-bold text-utsav-cream-900 block mb-1.5">
+                Mandatory Baseline Inclusions:
+              </span>
               <div className="flex flex-wrap gap-2">
                 {activeBrief.keyInclusions?.map((inc, i) => (
-                  <span key={i} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
+                  <span
+                    key={i}
+                    className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium"
+                  >
                     ✓ {inc}
                   </span>
                 ))}
@@ -207,11 +229,16 @@ export const VendorsTab: React.FC = () => {
             <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
               <span className="font-bold text-amber-950 flex items-center gap-1.5 text-xs">
                 <HelpCircle className="w-4 h-4 text-amber-700" />
-                <span>Targeted Negotiation & Hidden Fee Questions ({activeBrief.negotiationQuestions?.length || 0}):</span>
+                <span>
+                  Targeted Negotiation & Hidden Fee Questions (
+                  {activeBrief.negotiationQuestions?.length || 0}):
+                </span>
               </span>
               <ol className="list-decimal list-inside space-y-1.5 text-amber-900 leading-relaxed">
                 {activeBrief.negotiationQuestions?.map((q, idx) => (
-                  <li key={idx} className="font-medium">{q}</li>
+                  <li key={idx} className="font-medium">
+                    {q}
+                  </li>
                 ))}
               </ol>
             </div>
@@ -237,21 +264,28 @@ export const VendorsTab: React.FC = () => {
           </div>
 
           <p className="text-xs text-utsav-cream-800">
-            Paste the raw text received from the vendor. Gemini will extract verified fields (prices, inclusions, hidden charges), set unstated fields to null, and code will compute the Total Cost of Ownership.
+            Paste the raw text received from the vendor. Gemini will extract verified fields
+            (prices, inclusions, hidden charges), set unstated fields to null, and code will compute
+            the Total Cost of Ownership.
           </p>
 
           <div className="flex items-center gap-3">
-            <label htmlFor="quote-category-select" className="text-xs font-bold text-utsav-cream-900">
+            <label
+              htmlFor="quote-category-select"
+              className="text-xs font-bold text-utsav-cream-900"
+            >
               Category:
             </label>
             <select
               id="quote-category-select"
               value={quoteCategory}
-              onChange={e => setQuoteCategory(e.target.value as BudgetCategory)}
+              onChange={(e) => setQuoteCategory(e.target.value as BudgetCategory)}
               className="px-3 py-1.5 text-xs rounded-xl border border-utsav-cream-200 font-medium"
             >
-              {BUDGET_CATEGORIES.filter(c => c !== 'contingency').map(c => (
-                <option key={c} value={c}>{budget.categories[c]?.label || c}</option>
+              {BUDGET_CATEGORIES.filter((c) => c !== 'contingency').map((c) => (
+                <option key={c} value={c}>
+                  {budget.categories[c]?.label || c}
+                </option>
               ))}
             </select>
           </div>
@@ -259,7 +293,7 @@ export const VendorsTab: React.FC = () => {
           <textarea
             rows={5}
             value={rawQuoteText}
-            onChange={e => setRawQuoteText(e.target.value)}
+            onChange={(e) => setRawQuoteText(e.target.value)}
             placeholder="Paste raw vendor message here: e.g., 'Namaste Sir, Royal Banquet hall rate is Rs 3,50,000 for 300 guests. GST 18% extra. Generator diesel charges Rs 15,000 separate. Advance 50% on booking...'"
             className="w-full p-3 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500 bg-utsav-cream-50/50"
             disabled={isExtractingQuote}
@@ -268,7 +302,10 @@ export const VendorsTab: React.FC = () => {
           {quoteError && <ErrorAlert message={quoteError} onDismiss={() => setQuoteError(null)} />}
 
           {isExtractingQuote ? (
-            <LoadingSkeleton lines={2} label="Extracting verified items, inclusions, and calculating Total Cost of Ownership..." />
+            <LoadingSkeleton
+              lines={2}
+              label="Extracting verified items, inclusions, and calculating Total Cost of Ownership..."
+            />
           ) : (
             <div className="flex justify-end gap-3">
               <button
@@ -296,7 +333,9 @@ export const VendorsTab: React.FC = () => {
           <div>
             <h3 className="text-sm font-bold text-utsav-cream-900 flex items-center gap-2">
               <Layers className="w-4 h-4 text-utsav-saffron-600" />
-              <span>Side-by-Side Quote Comparison Matrix: {budget.categories[selectedCategory]?.label}</span>
+              <span>
+                Side-by-Side Quote Comparison Matrix: {budget.categories[selectedCategory]?.label}
+              </span>
             </h3>
             <span className="text-xs text-utsav-cream-800">
               {relevantQuotes.length} quotes parsed for this category
@@ -308,24 +347,39 @@ export const VendorsTab: React.FC = () => {
 
         {relevantQuotes.length === 0 ? (
           <div className="p-8 text-center bg-utsav-cream-50 rounded-xl border border-dashed border-utsav-cream-200 text-xs text-utsav-cream-800">
-            No quotes parsed yet for {budget.categories[selectedCategory]?.label}. Click "Parse Raw Vendor Quote" above to compare proposals side-by-side.
+            No quotes parsed yet for {budget.categories[selectedCategory]?.label}. Click "Parse Raw
+            Vendor Quote" above to compare proposals side-by-side.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-utsav-cream-200 bg-utsav-cream-50 text-utsav-cream-900 font-bold">
-                  <th scope="col" className="p-3">Vendor Name</th>
-                  <th scope="col" className="p-3">Base Price (₹)</th>
-                  <th scope="col" className="p-3">Extra / Hidden Fees (₹)</th>
-                  <th scope="col" className="p-3">Total Cost of Ownership (TCO)</th>
-                  <th scope="col" className="p-3">Capacity</th>
-                  <th scope="col" className="p-3">Missing Info (Omissions)</th>
-                  <th scope="col" className="p-3">Red Flags / Risks</th>
+                  <th scope="col" className="p-3">
+                    Vendor Name
+                  </th>
+                  <th scope="col" className="p-3">
+                    Base Price (₹)
+                  </th>
+                  <th scope="col" className="p-3">
+                    Extra / Hidden Fees (₹)
+                  </th>
+                  <th scope="col" className="p-3">
+                    Total Cost of Ownership (TCO)
+                  </th>
+                  <th scope="col" className="p-3">
+                    Capacity
+                  </th>
+                  <th scope="col" className="p-3">
+                    Missing Info (Omissions)
+                  </th>
+                  <th scope="col" className="p-3">
+                    Red Flags / Risks
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-utsav-cream-100 text-utsav-cream-900">
-                {relevantQuotes.map(quote => (
+                {relevantQuotes.map((quote) => (
                   <tr key={quote.id} className="hover:bg-utsav-cream-50/60 align-top">
                     <td className="p-3 font-semibold text-utsav-cream-900">
                       <div>{quote.vendorName}</div>
@@ -339,7 +393,9 @@ export const VendorsTab: React.FC = () => {
                       {quote.tiers && quote.tiers.length > 0 && (
                         <div className="text-[10px] text-utsav-saffron-800 mt-1">
                           <span className="font-semibold">Tiers:</span>{' '}
-                          {quote.tiers.map(t => `≤${t.upToGuests}: ₹${t.pricePerPlate}/plate`).join(', ')}
+                          {quote.tiers
+                            .map((t) => `≤${t.upToGuests}: ₹${t.pricePerPlate}/plate`)
+                            .join(', ')}
                         </div>
                       )}
                     </td>
@@ -352,7 +408,9 @@ export const VendorsTab: React.FC = () => {
                           </span>
                           <ul className="text-[10px] text-utsav-cream-800 mt-1 space-y-0.5">
                             {quote.additionalChargesBreakdown.map((item, i) => (
-                              <li key={i}>{item.item}: ₹{item.amountINR.toLocaleString('en-IN')}</li>
+                              <li key={i}>
+                                {item.item}: ₹{item.amountINR.toLocaleString('en-IN')}
+                              </li>
                             ))}
                           </ul>
                         </div>
@@ -370,7 +428,10 @@ export const VendorsTab: React.FC = () => {
                           <span className="text-emerald-700 font-semibold">Within Budget</span>
                         ) : (
                           <span className="text-red-700 font-semibold">
-                            Exceeds by ₹{(quote.computedTotalCostINR - allocatedBudgetForCategory).toLocaleString('en-IN')}
+                            Exceeds by ₹
+                            {(
+                              quote.computedTotalCostINR - allocatedBudgetForCategory
+                            ).toLocaleString('en-IN')}
                           </span>
                         )}
                       </span>

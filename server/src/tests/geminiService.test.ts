@@ -203,9 +203,7 @@ describe('GeminiService Retry and Error Handling', () => {
 
     expect(mockGenerateContent).toHaveBeenCalledTimes(2);
     expect(result).toEqual({ greeting: 'Recovered after timeout', count: 1 });
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[Gemini Error Timeout]')
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[Gemini Error Timeout]'));
   });
 
   it('handles repeated timeout: logs distinct message and returns friendly client error after retry failure', async () => {
@@ -224,13 +222,9 @@ describe('GeminiService Retry and Error Handling', () => {
         cachePrefix: 'test_timeout_fail',
         cachePayload: { testId: 7 }
       })
-    ).rejects.toThrow(
-      'The AI service request timed out. Please try again.'
-    );
+    ).rejects.toThrow('The AI service request timed out. Please try again.');
 
     expect(mockGenerateContent).toHaveBeenCalledTimes(2);
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[Gemini Error Timeout]')
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('[Gemini Error Timeout]'));
   });
 });

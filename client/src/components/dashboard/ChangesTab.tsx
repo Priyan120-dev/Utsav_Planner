@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { useEvent } from '../../context/EventContext.js';
 import * as api from '../../services/api.js';
-import { 
-  History, 
-  RotateCcw, 
-  AlertTriangle, 
-  Sparkles, 
-  Check, 
-  Calendar, 
-  Users, 
-  IndianRupee 
+import {
+  History,
+  RotateCcw,
+  AlertTriangle,
+  Sparkles,
+  Check,
+  Calendar,
+  Users,
+  IndianRupee
 } from 'lucide-react';
 import { LoadingSkeleton } from '../common/LoadingSkeleton.js';
 import { ErrorAlert } from '../common/ErrorAlert.js';
@@ -21,13 +21,12 @@ interface ChangesTabProps {
 
 export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
   const { eventState, commitDynamicChange, undoLastChange } = useEvent();
-  if (!eventState) return null;
 
-  const { profile, changeLog } = eventState;
-
-  // Change Form State
+  // Change Form State (hooks declared at top level)
   const [changeType, setChangeType] = useState<'budget' | 'guests' | 'date'>('guests');
-  const [newValue, setNewValue] = useState<string | number>(profile.expectedGuests + 50);
+  const [newValue, setNewValue] = useState<string | number>(() =>
+    eventState ? eventState.profile.expectedGuests + 50 : 50
+  );
   const [reason, setReason] = useState<string>('Expanded family and outstation guest list');
   const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
   const [evaluationResult, setEvaluationResult] = useState<any>(null);
@@ -35,16 +34,12 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
 
   // Evaluate Change Impact Preview
   const handleEvaluateChange = async () => {
+    if (!eventState) return;
     setIsEvaluating(true);
     setEvalError(null);
 
     try {
-      const res = await api.assessDynamicChangeImpact(
-        eventState,
-        changeType,
-        newValue,
-        reason
-      );
+      const res = await api.assessDynamicChangeImpact(eventState, changeType, newValue, reason);
       setEvaluationResult(res);
     } catch (err: any) {
       setEvalError(err.message || 'Failed to evaluate change impact.');
@@ -66,6 +61,10 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
     if (onCloseModal) onCloseModal();
   };
 
+  if (!eventState) return null;
+
+  const { profile, changeLog } = eventState;
+
   return (
     <div className="space-y-6">
       {/* Top Banner and Undo Action */}
@@ -80,7 +79,8 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
             </span>
           </div>
           <p className="text-xs text-utsav-cream-800 mt-1">
-            Life happens mid-planning: change guests, dates, or budgets. The system deterministically updates math and generates strategic impact diffs.
+            Life happens mid-planning: change guests, dates, or budgets. The system
+            deterministically updates math and generates strategic impact diffs.
           </p>
         </div>
 
@@ -104,7 +104,11 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
           <span>Apply an In-Flight Adjustment ("Something Changed")</span>
         </h3>
 
-        <div role="radiogroup" aria-label="Adjustment category" className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div
+          role="radiogroup"
+          aria-label="Adjustment category"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+        >
           <button
             type="button"
             role="radio"
@@ -122,7 +126,9 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
             <Users className="w-4 h-4 text-utsav-saffron-600" aria-hidden="true" />
             <div className="text-xs">
               <span className="block font-bold">Update Guest Count</span>
-              <span className="text-[11px] text-utsav-cream-800">Currently: {profile.expectedGuests}</span>
+              <span className="text-[11px] text-utsav-cream-800">
+                Currently: {profile.expectedGuests}
+              </span>
             </div>
           </button>
 
@@ -143,7 +149,9 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
             <IndianRupee className="w-4 h-4 text-utsav-saffron-600" aria-hidden="true" />
             <div className="text-xs">
               <span className="block font-bold">Update Budget</span>
-              <span className="text-[11px] text-utsav-cream-800">Currently: ₹{(profile.totalBudgetINR / 100000).toFixed(1)}L</span>
+              <span className="text-[11px] text-utsav-cream-800">
+                Currently: ₹{(profile.totalBudgetINR / 100000).toFixed(1)}L
+              </span>
             </div>
           </button>
 
@@ -164,15 +172,24 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
             <Calendar className="w-4 h-4 text-utsav-saffron-600" aria-hidden="true" />
             <div className="text-xs">
               <span className="block font-bold">Update Event Date</span>
-              <span className="text-[11px] text-utsav-cream-800">Currently: {profile.eventDate}</span>
+              <span className="text-[11px] text-utsav-cream-800">
+                Currently: {profile.eventDate}
+              </span>
             </div>
           </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           <div>
-            <label htmlFor="adjustment-value-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
-              {changeType === 'guests' ? 'New Guest Count:' : changeType === 'budget' ? 'New Total Budget (₹ INR):' : 'New Event Date:'}
+            <label
+              htmlFor="adjustment-value-input"
+              className="block text-xs font-bold text-utsav-cream-900 mb-1"
+            >
+              {changeType === 'guests'
+                ? 'New Guest Count:'
+                : changeType === 'budget'
+                  ? 'New Total Budget (₹ INR):'
+                  : 'New Event Date:'}
             </label>
             {changeType === 'date' ? (
               <input
@@ -180,23 +197,28 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
                 type="date"
                 aria-label="New event date"
                 value={String(newValue)}
-                onChange={e => setNewValue(e.target.value)}
+                onChange={(e) => setNewValue(e.target.value)}
                 className="w-full p-2.5 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
               />
             ) : (
               <input
                 id="adjustment-value-input"
                 type="number"
-                aria-label={changeType === 'guests' ? 'New guest count' : 'New total budget in rupees'}
+                aria-label={
+                  changeType === 'guests' ? 'New guest count' : 'New total budget in rupees'
+                }
                 value={Number(newValue)}
-                onChange={e => setNewValue(Number(e.target.value))}
+                onChange={(e) => setNewValue(Number(e.target.value))}
                 className="w-full p-2.5 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
               />
             )}
           </div>
 
           <div>
-            <label htmlFor="adjustment-reason-input" className="block text-xs font-bold text-utsav-cream-900 mb-1">
+            <label
+              htmlFor="adjustment-reason-input"
+              className="block text-xs font-bold text-utsav-cream-900 mb-1"
+            >
               Reason for Adjustment:
             </label>
             <input
@@ -204,7 +226,7 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
               type="text"
               aria-label="Reason for adjustment"
               value={reason}
-              onChange={e => setReason(e.target.value)}
+              onChange={(e) => setReason(e.target.value)}
               placeholder="e.g. Added outstation relatives, venue availability shifted..."
               className="w-full p-2.5 text-xs rounded-xl border border-utsav-cream-200 focus:ring-1 focus:ring-utsav-saffron-500"
             />
@@ -214,7 +236,10 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
         {evalError && <ErrorAlert message={evalError} onDismiss={() => setEvalError(null)} />}
 
         {isEvaluating ? (
-          <LoadingSkeleton lines={2} label="Recomputing budget math, deadlines, and querying Gemini for strategic advice..." />
+          <LoadingSkeleton
+            lines={2}
+            label="Recomputing budget math, deadlines, and querying Gemini for strategic advice..."
+          />
         ) : (
           <div className="flex justify-end pt-2">
             <button
@@ -239,15 +264,23 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
             {/* Before/After Diff */}
             <div className="grid grid-cols-2 gap-4 bg-white p-3.5 rounded-xl border border-amber-200 text-xs">
               <div>
-                <span className="font-semibold text-utsav-cream-800 block mb-0.5">Previous Value:</span>
+                <span className="font-semibold text-utsav-cream-800 block mb-0.5">
+                  Previous Value:
+                </span>
                 <span className="text-sm font-bold text-red-700">
-                  {changeType === 'budget' ? `₹${Number(evaluationResult.oldValue).toLocaleString('en-IN')}` : String(evaluationResult.oldValue)}
+                  {changeType === 'budget'
+                    ? `₹${Number(evaluationResult.oldValue).toLocaleString('en-IN')}`
+                    : String(evaluationResult.oldValue)}
                 </span>
               </div>
               <div>
-                <span className="font-semibold text-utsav-cream-800 block mb-0.5">New Target Value:</span>
+                <span className="font-semibold text-utsav-cream-800 block mb-0.5">
+                  New Target Value:
+                </span>
                 <span className="text-sm font-bold text-emerald-700">
-                  {changeType === 'budget' ? `₹${Number(evaluationResult.newValue).toLocaleString('en-IN')}` : String(evaluationResult.newValue)}
+                  {changeType === 'budget'
+                    ? `₹${Number(evaluationResult.newValue).toLocaleString('en-IN')}`
+                    : String(evaluationResult.newValue)}
                 </span>
               </div>
             </div>
@@ -315,10 +348,16 @@ export const ChangesTab: React.FC<ChangesTabProps> = ({ onCloseModal }) => {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-utsav-cream-900 capitalize">
-                    {entry.fieldChanged === 'custom' ? 'Plan Event' : `Changed ${entry.fieldChanged}`}
+                    {entry.fieldChanged === 'custom'
+                      ? 'Plan Event'
+                      : `Changed ${entry.fieldChanged}`}
                   </span>
                   <span className="text-[10px] text-utsav-cream-800">
-                    {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} &bull; {new Date(entry.timestamp).toLocaleDateString()}
+                    {new Date(entry.timestamp).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}{' '}
+                    &bull; {new Date(entry.timestamp).toLocaleDateString()}
                   </span>
                 </div>
                 <p className="text-utsav-cream-800">{entry.impactSummary}</p>

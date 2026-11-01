@@ -20,7 +20,10 @@ export const CATEGORY_COLORS: Record<BudgetCategory, string> = {
   contingency: '#b45309' // amber-700
 };
 
-export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budget, forcedView }) => {
+export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({
+  budget,
+  forcedView
+}) => {
   const [showTableInternal, setShowTableInternal] = useState<boolean>(false);
   const [hoveredCategory, setHoveredCategory] = useState<BudgetCategory | null>(null);
 
@@ -36,7 +39,7 @@ export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budg
   const circumference = 2 * Math.PI * radius;
 
   let cumulativeOffset = 0;
-  const slices = categories.map(item => {
+  const slices = categories.map((item) => {
     const strokeDasharray = `${(item.percentage / 100) * circumference} ${circumference}`;
     const strokeDashoffset = -cumulativeOffset;
     cumulativeOffset += (item.percentage / 100) * circumference;
@@ -90,17 +93,27 @@ export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budg
         /* Accessible HTML Table Alternative */
         <div id="budget-data-table" className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <caption className="sr-only">Detailed event budget allocation breakdown by category</caption>
+            <caption className="sr-only">
+              Detailed event budget allocation breakdown by category
+            </caption>
             <thead>
               <tr className="border-b border-utsav-cream-200 bg-utsav-cream-50 text-utsav-cream-900 font-semibold">
-                <th scope="col" className="p-2.5">Category</th>
-                <th scope="col" className="p-2.5 text-right">Share (%)</th>
-                <th scope="col" className="p-2.5 text-right">Amount (₹)</th>
-                <th scope="col" className="p-2.5 text-right">Cost Per Guest (₹)</th>
+                <th scope="col" className="p-2.5">
+                  Category
+                </th>
+                <th scope="col" className="p-2.5 text-right">
+                  Share (%)
+                </th>
+                <th scope="col" className="p-2.5 text-right">
+                  Amount (₹)
+                </th>
+                <th scope="col" className="p-2.5 text-right">
+                  Cost Per Guest (₹)
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-utsav-cream-100 text-utsav-cream-800">
-              {categories.map(item => (
+              {categories.map((item) => (
                 <tr key={item.category} className="hover:bg-utsav-cream-50">
                   <th scope="row" className="p-2.5 font-medium flex items-center gap-2">
                     <span
@@ -125,10 +138,14 @@ export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budg
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-utsav-cream-200 font-bold bg-utsav-cream-50 text-utsav-cream-900">
-                <th scope="row" className="p-2.5">Total Allocation</th>
+                <th scope="row" className="p-2.5">
+                  Total Allocation
+                </th>
                 <td className="p-2.5 text-right">100%</td>
                 <td className="p-2.5 text-right">₹{total.toLocaleString('en-IN')}</td>
-                <td className="p-2.5 text-right">₹{budget.perGuestTotalINR.toLocaleString('en-IN')}</td>
+                <td className="p-2.5 text-right">
+                  ₹{budget.perGuestTotalINR.toLocaleString('en-IN')}
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -146,7 +163,7 @@ export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budg
               role="img"
               aria-label="Donut chart of budget distribution"
             >
-              {slices.map(slice => (
+              {slices.map((slice) => (
                 <circle
                   key={slice.category}
                   role="graphics-symbol"
@@ -199,13 +216,15 @@ export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budg
 
           {/* Legend Grid */}
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs w-full max-w-md">
-            {categories.map(item => (
+            {categories.map((item) => (
               <div
                 key={item.category}
                 onMouseEnter={() => setHoveredCategory(item.category)}
                 onMouseLeave={() => setHoveredCategory(null)}
                 className={`flex items-center justify-between p-1.5 rounded-lg transition-colors cursor-pointer ${
-                  hoveredCategory === item.category ? 'bg-utsav-cream-100' : 'hover:bg-utsav-cream-50'
+                  hoveredCategory === item.category
+                    ? 'bg-utsav-cream-100'
+                    : 'hover:bg-utsav-cream-50'
                 }`}
               >
                 <div className="flex items-center gap-2 truncate">
@@ -214,13 +233,9 @@ export const AccessibleDonutChart: React.FC<AccessibleDonutChartProps> = ({ budg
                     style={{ backgroundColor: CATEGORY_COLORS[item.category] }}
                     aria-hidden="true"
                   />
-                  <span className="truncate text-utsav-cream-900 font-medium">
-                    {item.label}
-                  </span>
+                  <span className="truncate text-utsav-cream-900 font-medium">{item.label}</span>
                 </div>
-                <span className="font-semibold text-utsav-cream-800 ml-2">
-                  {item.percentage}%
-                </span>
+                <span className="font-semibold text-utsav-cream-800 ml-2">{item.percentage}%</span>
               </div>
             ))}
           </div>

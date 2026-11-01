@@ -3,22 +3,29 @@ import {
   initializeBudgetState,
   computeCategoryPercentages,
   rebalanceBudget,
-  recalculateBudgetForParameters,
-  BUDGET_CATEGORIES
+  recalculateBudgetForParameters
 } from '@utsav/shared';
 
 describe('Budget Pure Logic', () => {
   it('initializes budget state and ensures percentages sum to 100 with contingency >= 5%', () => {
     const totalBudget = 2000000;
     const guests = 300;
-    const state = initializeBudgetState(totalBudget, 'wedding', ['Catering', 'Photography', 'Decor'], guests);
+    const state = initializeBudgetState(
+      totalBudget,
+      'wedding',
+      ['Catering', 'Photography', 'Decor'],
+      guests
+    );
 
     expect(state.totalBudgetINR).toBe(2000000);
     expect(state.perGuestTotalINR).toBe(Math.round(2000000 / 300));
     expect(state.contingencyPercent).toBeGreaterThanOrEqual(5);
 
     // Sum of category allocations equals total budget
-    const allocatedSum = Object.values(state.categories).reduce((acc, item) => acc + item.allocatedAmountINR, 0);
+    const allocatedSum = Object.values(state.categories).reduce(
+      (acc, item) => acc + item.allocatedAmountINR,
+      0
+    );
     expect(Math.abs(allocatedSum - totalBudget)).toBeLessThanOrEqual(5); // rounding difference <= 5 INR
 
     // Sum of percentages equals 100
@@ -28,11 +35,17 @@ describe('Budget Pure Logic', () => {
 
   it('shifts baseline allocations based on user priorities', () => {
     const unshifted = computeCategoryPercentages('wedding', ['none', 'none', 'none']);
-    const shifted = computeCategoryPercentages('wedding', ['Royal Catering feast', 'Photography & Film', 'Floral Decor']);
+    const shifted = computeCategoryPercentages('wedding', [
+      'Royal Catering feast',
+      'Photography & Film',
+      'Floral Decor'
+    ]);
 
     // Boosted categories should have higher or equal share
     expect(shifted.catering).toBeGreaterThanOrEqual(unshifted.catering);
-    expect(shifted.photography_videography).toBeGreaterThanOrEqual(unshifted.photography_videography);
+    expect(shifted.photography_videography).toBeGreaterThanOrEqual(
+      unshifted.photography_videography
+    );
     expect(shifted.decor).toBeGreaterThanOrEqual(unshifted.decor);
 
     // Total remains 100
@@ -51,7 +64,10 @@ describe('Budget Pure Logic', () => {
     expect(updated.contingencyPercent).toBeGreaterThanOrEqual(5);
 
     // Overall sum must strictly remain 100
-    const totalPct = Object.values(updated.categories).reduce((acc, item) => acc + item.percentage, 0);
+    const totalPct = Object.values(updated.categories).reduce(
+      (acc, item) => acc + item.percentage,
+      0
+    );
     expect(totalPct).toBe(100);
 
     // Per guest costs are accurately recomputed
@@ -61,7 +77,12 @@ describe('Budget Pure Logic', () => {
   });
 
   it('recalculates per-head and allocations when total budget or guest count changes', () => {
-    const initial = initializeBudgetState(1000000, 'birthday', ['Entertainment', 'Catering', 'Decor'], 50);
+    const initial = initializeBudgetState(
+      1000000,
+      'birthday',
+      ['Entertainment', 'Catering', 'Decor'],
+      50
+    );
     expect(initial.perGuestTotalINR).toBe(20000);
 
     // Double budget and quadruple guests
@@ -75,10 +96,18 @@ describe('Budget Pure Logic', () => {
     const guests = 150;
 
     for (const totalBudget of testBudgets) {
-      let state = initializeBudgetState(totalBudget, 'wedding', ['Catering', 'Decor', 'Photography'], guests);
+      let state = initializeBudgetState(
+        totalBudget,
+        'wedding',
+        ['Catering', 'Decor', 'Photography'],
+        guests
+      );
 
       // Initial allocation strictly matches total budget
-      const initialAllocated = Object.values(state.categories).reduce((sum, c) => sum + c.allocatedAmountINR, 0);
+      const initialAllocated = Object.values(state.categories).reduce(
+        (sum, c) => sum + c.allocatedAmountINR,
+        0
+      );
       expect(initialAllocated).toBe(totalBudget);
 
       // Perform successive slider rebalances
@@ -100,7 +129,10 @@ describe('Budget Pure Logic', () => {
         expect(totalPct).toBe(100);
 
         // Total allocation INR ALWAYS stays equal to the total budget
-        const currentAllocated = Object.values(state.categories).reduce((sum, c) => sum + c.allocatedAmountINR, 0);
+        const currentAllocated = Object.values(state.categories).reduce(
+          (sum, c) => sum + c.allocatedAmountINR,
+          0
+        );
         expect(currentAllocated).toBe(totalBudget);
 
         // Emergency buffer never drops below 5%

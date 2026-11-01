@@ -57,9 +57,9 @@ describe('Production Client Serving & SPA Fallback', () => {
     expect(csp).toContain("default-src 'self'");
     expect(csp).toContain("script-src 'self'");
     expect(csp).toContain("'unsafe-inline'");
-    expect(csp).toContain("https://fonts.googleapis.com");
-    expect(csp).toContain("https://fonts.gstatic.com");
-    expect(csp).toContain("data:");
+    expect(csp).toContain('https://fonts.googleapis.com');
+    expect(csp).toContain('https://fonts.gstatic.com');
+    expect(csp).toContain('data:');
   });
 
   it('allows same-origin requests through CORS without blocking', async () => {

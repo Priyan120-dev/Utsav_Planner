@@ -29,7 +29,7 @@ export const AccessibleBarChart: React.FC<AccessibleBarChartProps> = ({ budget, 
   const total = budget.totalBudgetINR;
 
   // Max percentage among categories to scale bar widths cleanly
-  const maxPct = Math.max(...categories.map(c => c.percentage), 40);
+  const maxPct = Math.max(...categories.map((c) => c.percentage), 40);
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-utsav-cream-200 shadow-xs">
@@ -71,17 +71,27 @@ export const AccessibleBarChart: React.FC<AccessibleBarChartProps> = ({ budget, 
         /* Accessible HTML Table Alternative */
         <div id="budget-bar-data-table" className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <caption className="sr-only">Detailed event budget allocation breakdown by category</caption>
+            <caption className="sr-only">
+              Detailed event budget allocation breakdown by category
+            </caption>
             <thead>
               <tr className="border-b border-utsav-cream-200 bg-utsav-cream-50 text-utsav-cream-900 font-semibold">
-                <th scope="col" className="p-2.5">Category</th>
-                <th scope="col" className="p-2.5 text-right">Share (%)</th>
-                <th scope="col" className="p-2.5 text-right">Amount (₹)</th>
-                <th scope="col" className="p-2.5 text-right">Cost Per Guest (₹)</th>
+                <th scope="col" className="p-2.5">
+                  Category
+                </th>
+                <th scope="col" className="p-2.5 text-right">
+                  Share (%)
+                </th>
+                <th scope="col" className="p-2.5 text-right">
+                  Amount (₹)
+                </th>
+                <th scope="col" className="p-2.5 text-right">
+                  Cost Per Guest (₹)
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-utsav-cream-100 text-utsav-cream-800">
-              {categories.map(item => (
+              {categories.map((item) => (
                 <tr key={item.category} className="hover:bg-utsav-cream-50">
                   <th scope="row" className="p-2.5 font-medium flex items-center gap-2">
                     <span
@@ -106,10 +116,14 @@ export const AccessibleBarChart: React.FC<AccessibleBarChartProps> = ({ budget, 
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-utsav-cream-200 font-bold bg-utsav-cream-50 text-utsav-cream-900">
-                <th scope="row" className="p-2.5">Total Allocation</th>
+                <th scope="row" className="p-2.5">
+                  Total Allocation
+                </th>
                 <td className="p-2.5 text-right">100%</td>
                 <td className="p-2.5 text-right">₹{total.toLocaleString('en-IN')}</td>
-                <td className="p-2.5 text-right">₹{budget.perGuestTotalINR.toLocaleString('en-IN')}</td>
+                <td className="p-2.5 text-right">
+                  ₹{budget.perGuestTotalINR.toLocaleString('en-IN')}
+                </td>
               </tr>
             </tfoot>
           </table>
@@ -165,14 +179,7 @@ export const AccessibleBarChart: React.FC<AccessibleBarChartProps> = ({ budget, 
                   </text>
 
                   {/* Bar Background Track */}
-                  <rect
-                    x="10"
-                    y={y + 20}
-                    width="580"
-                    height="10"
-                    rx="5"
-                    fill="#f5f5f4"
-                  />
+                  <rect x="10" y={y + 20} width="580" height="10" rx="5" fill="#f5f5f4" />
 
                   {/* Active Bar Fill */}
                   <rect

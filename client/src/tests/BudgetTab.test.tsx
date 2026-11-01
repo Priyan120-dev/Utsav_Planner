@@ -28,7 +28,12 @@ describe('BudgetTab Component', () => {
     version: 1,
     id: 'evt-budget-test',
     profile: mockProfile,
-    budget: initializeBudgetState(1000000, 'wedding', ['Catering & Dining', 'Venue & Grounds', 'Decor, Mandap & Lighting'], 100),
+    budget: initializeBudgetState(
+      1000000,
+      'wedding',
+      ['Catering & Dining', 'Venue & Grounds', 'Decor, Mandap & Lighting'],
+      100
+    ),
     timeline: {
       tasks: [],
       eventDate: '2026-12-15',

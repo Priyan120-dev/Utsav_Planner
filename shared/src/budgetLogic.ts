@@ -1,9 +1,4 @@
-import { 
-  BudgetCategory, 
-  BudgetCategoryItem, 
-  BudgetState, 
-  OccasionType 
-} from './types.js';
+import { BudgetCategory, BudgetCategoryItem, BudgetState, OccasionType } from './types.js';
 
 export const BUDGET_CATEGORIES: BudgetCategory[] = [
   'venue',
@@ -100,14 +95,39 @@ export const BASELINE_PERCENTAGES: Record<OccasionType, Record<BudgetCategory, n
  */
 export function mapPriorityToCategory(priority: string): BudgetCategory | null {
   const p = priority.toLowerCase();
-  if (p.includes('food') || p.includes('cater') || p.includes('feast') || p.includes('dining')) return 'catering';
-  if (p.includes('venue') || p.includes('location') || p.includes('resort') || p.includes('hall')) return 'venue';
-  if (p.includes('decor') || p.includes('flower') || p.includes('lighting') || p.includes('mandap') || p.includes('ambiance')) return 'decor';
-  if (p.includes('photo') || p.includes('video') || p.includes('film') || p.includes('cinemat')) return 'photography_videography';
-  if (p.includes('music') || p.includes('dj') || p.includes('dance') || p.includes('entertainment') || p.includes('sangeet')) return 'entertainment';
-  if (p.includes('cloth') || p.includes('dress') || p.includes('attire') || p.includes('outfit') || p.includes('jewel')) return 'attire';
+  if (p.includes('food') || p.includes('cater') || p.includes('feast') || p.includes('dining'))
+    return 'catering';
+  if (p.includes('venue') || p.includes('location') || p.includes('resort') || p.includes('hall'))
+    return 'venue';
+  if (
+    p.includes('decor') ||
+    p.includes('flower') ||
+    p.includes('lighting') ||
+    p.includes('mandap') ||
+    p.includes('ambiance')
+  )
+    return 'decor';
+  if (p.includes('photo') || p.includes('video') || p.includes('film') || p.includes('cinemat'))
+    return 'photography_videography';
+  if (
+    p.includes('music') ||
+    p.includes('dj') ||
+    p.includes('dance') ||
+    p.includes('entertainment') ||
+    p.includes('sangeet')
+  )
+    return 'entertainment';
+  if (
+    p.includes('cloth') ||
+    p.includes('dress') ||
+    p.includes('attire') ||
+    p.includes('outfit') ||
+    p.includes('jewel')
+  )
+    return 'attire';
   if (p.includes('invite') || p.includes('card') || p.includes('rsvp')) return 'invitations';
-  if (p.includes('transport') || p.includes('bus') || p.includes('car') || p.includes('cab')) return 'transport';
+  if (p.includes('transport') || p.includes('bus') || p.includes('car') || p.includes('cab'))
+    return 'transport';
   return null;
 }
 
@@ -119,7 +139,7 @@ export function computeCategoryPercentages(
   priorities: [string, string, string]
 ): Record<BudgetCategory, number> {
   const base = { ...(BASELINE_PERCENTAGES[occasion] || BASELINE_PERCENTAGES.wedding) };
-  
+
   // Identify categories linked to user priorities
   const boostedCategories: BudgetCategory[] = [];
   for (const prio of priorities) {
@@ -141,7 +161,7 @@ export function computeCategoryPercentages(
 
     // Deduct equally from non-boosted, non-contingency categories that have room
     const nonBoosted = BUDGET_CATEGORIES.filter(
-      c => !boostedCategories.includes(c) && c !== 'contingency' && base[c] > 3
+      (c) => !boostedCategories.includes(c) && c !== 'contingency' && base[c] > 3
     );
 
     let remainingToDeduct = totalBoostApplied;
@@ -205,9 +225,8 @@ export function initializeBudgetState(
   if (initDiff !== 0) {
     const leadCat: BudgetCategory = categories['catering'] ? 'catering' : 'venue';
     categories[leadCat].allocatedAmountINR += initDiff;
-    categories[leadCat].perGuestINR = expectedGuests > 0 
-      ? Math.round(categories[leadCat].allocatedAmountINR / expectedGuests) 
-      : 0;
+    categories[leadCat].perGuestINR =
+      expectedGuests > 0 ? Math.round(categories[leadCat].allocatedAmountINR / expectedGuests) : 0;
   }
 
   return {
@@ -229,7 +248,10 @@ export function rebalanceBudget(
   expectedGuests: number
 ): BudgetState {
   // Clamp between 0 and 90% (leaving room for contingency)
-  const clampedPct = Math.max(0, Math.min(targetCategory === 'contingency' ? 50 : 85, Math.round(newPercentage)));
+  const clampedPct = Math.max(
+    0,
+    Math.min(targetCategory === 'contingency' ? 50 : 85, Math.round(newPercentage))
+  );
   const oldPct = currentBudget.categories[targetCategory].percentage;
   const delta = clampedPct - oldPct;
 
@@ -238,9 +260,9 @@ export function rebalanceBudget(
   }
 
   // Other categories to adjust (excluding the target and ensuring contingency never drops below 5%)
-  const otherCategories = BUDGET_CATEGORIES.filter(c => c !== targetCategory);
+  const otherCategories = BUDGET_CATEGORIES.filter((c) => c !== targetCategory);
   const currentOtherSum = otherCategories.reduce(
-    (sum, c) => sum + currentBudget.categories[c].percentage, 
+    (sum, c) => sum + currentBudget.categories[c].percentage,
     0
   );
 
@@ -254,8 +276,8 @@ export function rebalanceBudget(
     } else {
       const share = currentBudget.categories[c].percentage / currentOtherSum;
       const newCatPct = Math.max(
-        c === 'contingency' ? 5 : 0, 
-        Math.round(currentBudget.categories[c].percentage - (delta * share))
+        c === 'contingency' ? 5 : 0,
+        Math.round(currentBudget.categories[c].percentage - delta * share)
       );
       updatedPercentages[c] = newCatPct;
     }
@@ -268,8 +290,10 @@ export function rebalanceBudget(
 
   if (discrepancy !== 0) {
     // Distribute discrepancy to a flexible category that isn't the target or contingency
-    const candidate = otherCategories.find(c => c !== 'contingency' && updatedPercentages[c] + discrepancy >= 0) 
-      || otherCategories[0];
+    const candidate =
+      otherCategories.find(
+        (c) => c !== 'contingency' && updatedPercentages[c] + discrepancy >= 0
+      ) || otherCategories[0];
     updatedPercentages[candidate] += discrepancy;
   }
 
@@ -279,7 +303,7 @@ export function rebalanceBudget(
     updatedPercentages.contingency = 5;
     // deduct from largest category that isn't target
     const largestNonTarget = otherCategories
-      .filter(c => c !== 'contingency')
+      .filter((c) => c !== 'contingency')
       .sort((a, b) => updatedPercentages[b] - updatedPercentages[a])[0];
     if (largestNonTarget && updatedPercentages[largestNonTarget] > shortage) {
       updatedPercentages[largestNonTarget] -= shortage;
@@ -309,16 +333,18 @@ export function rebalanceBudget(
   if (diffINR !== 0) {
     const adjustCat = targetCategory !== 'contingency' ? targetCategory : 'venue';
     newCategories[adjustCat].allocatedAmountINR += diffINR;
-    newCategories[adjustCat].perGuestINR = expectedGuests > 0 
-      ? Math.round(newCategories[adjustCat].allocatedAmountINR / expectedGuests) 
-      : 0;
+    newCategories[adjustCat].perGuestINR =
+      expectedGuests > 0
+        ? Math.round(newCategories[adjustCat].allocatedAmountINR / expectedGuests)
+        : 0;
   }
 
   return {
     ...currentBudget,
     categories: newCategories,
     contingencyPercent: updatedPercentages.contingency,
-    perGuestTotalINR: expectedGuests > 0 ? Math.round(currentBudget.totalBudgetINR / expectedGuests) : 0
+    perGuestTotalINR:
+      expectedGuests > 0 ? Math.round(currentBudget.totalBudgetINR / expectedGuests) : 0
   };
 }
 
