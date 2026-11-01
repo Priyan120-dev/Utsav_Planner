@@ -36,6 +36,7 @@ ENV PORT=5000
 COPY package*.json ./
 COPY shared/package*.json ./shared/
 COPY server/package*.json ./server/
+COPY client/package*.json ./client/
 
 # Install production dependencies only
 RUN npm install --omit=dev
