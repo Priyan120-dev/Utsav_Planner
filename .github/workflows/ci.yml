@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [ master, main, safe-fixes ]
+    branches: [ master, main, safe-fixes, quality-fixes ]
   pull_request:
-    branches: [ master, main, safe-fixes ]
+    branches: [ master, main, safe-fixes, quality-fixes ]
 
 jobs:
   build-and-test:
